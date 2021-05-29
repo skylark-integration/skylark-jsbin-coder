@@ -1,0 +1,32 @@
+{
+  "name": "skylark-jsbin-coder",
+  "description": "A version of jsbin-editor  that ported to running on skylarkjs.",
+  "version": "0.9.0",
+  "keywords": [
+    "jsbin-editor",
+    "playground"
+  ],
+  "homepage": "https://github.com/skylark-integration/skylark-jsbin-coder/",
+  "author": "Hudaokeji, Inc.",
+  "scripts": {
+    "build": "slib build ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skylark-integration/skylark-jsbin-coder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/skylark-integration/skylark-jsbin-coder/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "skylark-codemirror": "git+https://github.com/skylark-integration/skylark-codemirror.git#master",
+    "skylark-jquery": "git+https://github.com/skylark-integration/skylark-jquery.git#master",
+    "skylark-jsbin-console": "git+https://github.com/skylark-integration/skylark-jsbin-console.git",
+    "skylark-jsbin-renderer": "git+https://github.com/skylark-integration/skylark-jsbin-renderer.git",
+    "skylark-langx": "git+https://github.com/skylark-langx/skylark-langx.git#master"
+  },
+  "engines": {
+    "node": ">=0.10.1"
+  }
+}

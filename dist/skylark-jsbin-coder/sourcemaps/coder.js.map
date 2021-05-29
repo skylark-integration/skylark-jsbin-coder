@@ -1,0 +1,1 @@
+{"version":3,"sources":["coder.js"],"names":["define","jsbin","coder","editors","render"],"mappings":";;;;;;;AAAAA,QACC,WACC,SAASC,GACV,OAAOA,EAAMC,OACZC,WACAC","file":"../coder.js","sourcesContent":["define([\r\n\t\"./jsbin\"\r\n],function(jsbin){\r\n\treturn jsbin.coder = {\r\n\t\teditors : {},\r\n\t\trender : {}\r\n\t};\r\n});"]}
