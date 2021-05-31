@@ -1,8 +1,9 @@
 define([
   "skylark-jquery",
+  "skylark-jsbin-base/storage",
    "../jsbin",
    "../coder"
-],function ($,jsbin,coder) {
+],function ($,store,jsbin,coder) {
   var libraries = [
     {
       'url': 'https://code.jquery.com/jquery-git.js',

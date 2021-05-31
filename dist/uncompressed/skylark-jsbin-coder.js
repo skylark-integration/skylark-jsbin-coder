@@ -5106,11 +5106,12 @@ define('skylark-jsbin-coder/editors/snippets.cm',[
 });
 define('skylark-jsbin-coder/editors/panel',[
   "skylark-jquery",
+  "skylark-jsbin-base/storage",
    "../jsbin",
    "../coder",
   "./codemirror",
   "./snippets.cm"
-],function ($,jsbin,coder,CodeMirror) {
+],function ($,store,jsbin,coder,CodeMirror) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),
@@ -5762,9 +5763,10 @@ define('skylark-jsbin-coder/editors/panel',[
 });
 define('skylark-jsbin-coder/editors/panels',[
   "skylark-jquery",
-   "../jsbin",
+   "skylark-jsbin-base/storage",
+  "../jsbin",
    "./panel"
-],function ($,jsbin,Panel) {
+],function ($,store,jsbin,Panel) {
   var panels = {};
 
   panels.getVisible = function () {
@@ -7039,9 +7041,10 @@ define('skylark-jsbin-coder/editors/keycontrol',[
 });
 define('skylark-jsbin-coder/editors/libraries',[
   "skylark-jquery",
+  "skylark-jsbin-base/storage",
    "../jsbin",
    "../coder"
-],function ($,jsbin,coder) {
+],function ($,store,jsbin,coder) {
   var libraries = [
     {
       'url': 'https://code.jquery.com/jquery-git.js',

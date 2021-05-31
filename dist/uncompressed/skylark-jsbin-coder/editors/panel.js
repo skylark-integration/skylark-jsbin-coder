@@ -1,10 +1,11 @@
 define([
   "skylark-jquery",
+  "skylark-jsbin-base/storage",
    "../jsbin",
    "../coder",
   "./codemirror",
   "./snippets.cm"
-],function ($,jsbin,coder,CodeMirror) {
+],function ($,store,jsbin,coder,CodeMirror) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),

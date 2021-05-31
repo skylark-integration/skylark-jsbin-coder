@@ -1,10 +1,11 @@
 define([
   "skylark-langx",
   "skylark-jquery",
+  "skylark-jsbin-base/storage",
    "./jsbin",
    "../coder",
    "./getRenderedCode"
-],function (langx,$,jsbin,coder,getRenderedCode) {
+],function (langx,$,store,jsbin,coder,getRenderedCode) {
   // moved from render/live.js
   
 

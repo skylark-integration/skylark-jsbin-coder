@@ -1,8 +1,9 @@
 define([
   "skylark-jquery",
-   "../jsbin",
+   "skylark-jsbin-base/storage",
+  "../jsbin",
    "./panel"
-],function ($,jsbin,Panel) {
+],function ($,store,jsbin,Panel) {
   var panels = {};
 
   panels.getVisible = function () {
