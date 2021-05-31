@@ -10,7 +10,8 @@ define([
     "./editors/library",
     "./editors/addons",
     "./editors/snapshot",
-    "./editors/beautify"
+    "./editors/beautify",
+    "./init"
 
 ],function(coder){
 	return coder;

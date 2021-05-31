@@ -94,7 +94,7 @@ define([
     panel.on('hide', panels.updateQuery);
 
     // keyboard shortcut (set in keyboardcontrol.js)
-    panelShortcuts[panelShortcuts.start + panel.order] = panel.id;
+    // panelShortcuts[panelShortcuts.start + panel.order] = panel.id; //TODO:
 
     if (panel.order === 1) {
       settings.nosplitter = true;
@@ -143,11 +143,11 @@ define([
 
       panel.editor = CodeMirror.fromTextArea(panel.el, cmSettings);
 
-      if (name === 'html' || name === 'css') {
-        delete emmetCodeMirror.defaultKeymap['Cmd-D'];
-        delete emmetCodeMirror.defaultKeymap['Ctrl-D'];
-        emmetCodeMirror(panel.editor);
-      }
+      ///if (name === 'html' || name === 'css') {
+      ///  delete emmetCodeMirror.defaultKeymap['Cmd-D'];
+      ///  delete emmetCodeMirror.defaultKeymap['Ctrl-D'];
+      ///  emmetCodeMirror(panel.editor);
+      ///}
 
       panel.editor.on('highlightLines', function () {
         window.location.hash = panels.getHighlightLines();
@@ -652,6 +652,145 @@ define([
       $document.trigger('codeChange', [ { revert: false, onload: true } ]);
     }
   }
+
+
+
+  // moved from processors/processor.js
+  var render = function() {
+    if (jsbin.panels.ready) {
+      editors.console.render();
+    }
+  };
+
+  var formatErrors = function(res) {
+    var errors = [];
+    var line = 0;
+    var ch = 0;
+    for (var i = 0; i < res.length; i++) {
+      line = res[i].line || 0;
+      ch = res[i].ch || 0;
+      errors.push({
+        from: CodeMirror.Pos(line, ch),
+        to: CodeMirror.Pos(line, ch),
+        message: res[i].msg,
+        severity : 'error'
+      });
+    }
+    return errors;
+  };
+
+  var $panelButtons = $('#panels');
+
+  var $processorSelectors = $('div.processorSelector').each(function () {
+    var panelId = this.getAttribute('data-type'),
+        $el = $(this),
+        $label = $el.closest('.label').find('strong a'),
+        originalLabel = $label.text();
+
+    $el.find('a').click(function (e) {
+      var panel = jsbin.panels.named[panelId];
+      var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
+
+      e.preventDefault();
+      var target = this.hash.substring(1),
+          label = $(this).text(),
+          labelData = $(this).data('label');
+      if (target !== 'convert') {
+        $panelButton.html(labelData || label);
+        $label.html('<span>' + label + '</span>');
+        if (target === panelId) {
+          processors.reset(panelId);
+          render();
+        } else {
+          processors.set(panelId, target, render);
+        }
+      } else {
+        $label.text(originalLabel);
+        $panelButton.html(originalLabel);
+        panel.render().then(function (source) {
+          processors.reset(panelId);
+          panel.setCode(source);
+        });
+      }
+    }).bind('select', function (event, value) {
+      if (value === this.hash.substring(1)) {
+        var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
+        var $this = $(this);
+        $label.html('<span>' + $this.text() + '</span>');
+        $panelButton.html($this.data('label') || $this.text());
+      }
+    });
+  });
+
+  processors.set = function (panelId, processorName, callback) {
+    var panel;
+
+    // panelId can be id or instance of a panel.
+    // this is kinda nasty, but it allows me to set panel processors during boot
+    if (panelId instanceof Panel) {
+      panel = panelId;
+      panelId = panel.id;
+    } else {
+      panel = jsbin.panels.named[panelId];
+    }
+
+    if (!jsbin.state.processors) {
+      jsbin.state.processors = {};
+    }
+
+    var cmMode = processorName ? editorModes[processorName] || editorModes[panelId] : editorModes[panelId];
+
+    // For JSX, use the plain JavaScript mode but disable smart indentation
+    // because it doesn't work properly
+    var smartIndent = processorName !== 'jsx';
+
+    if (!panel) { return; }
+
+    panel.trigger('processor', processorName || 'none');
+    if (processorName && processors[processorName]) {
+      jsbin.state.processors[panelId] = processorName;
+      panel.processor = processors[processorName](function () {
+        // processor is ready
+        panel.editor.setOption('mode', cmMode);
+        panel.editor.setOption('smartIndent', smartIndent);
+        $processorSelectors.find('a').trigger('select', [processorName]);
+        if (callback) { callback(); }
+      });
+    } else {
+      // remove the preprocessor
+      panel.editor.setOption('mode', cmMode);
+      panel.editor.setOption('smartIndent', smartIndent);
+
+      panel.processor = defaultProcessor;
+      // delete jsbin.state.processors[panelId];
+      jsbin.state.processors[panelId] = panelId;
+      delete panel.type;
+    }
+
+    // linting
+    var mmMode = cmMode;
+    if (cmMode === 'javascript') {
+      mmMode = 'js';
+    }
+    if (cmMode === 'htmlmixed') {
+      mmMode = 'html';
+    }
+    var isHint = panel.editor.getOption('lint');
+    if (isHint) {
+      panel.editor.lintStop();
+    }
+    if (jsbin.settings[mmMode + 'hint']) {
+      panel.editor.setOption('mode', cmMode);
+      if (typeof hintingDone !== 'undefined') {
+        panel.editor.setOption('mode', cmMode);
+        hintingDone(panel.editor);
+      }
+    }
+  };
+
+  processors.reset = function (panelId) {
+    processors.set(panelId);
+  };
 
   return coder.editors.Panel = Panel;
 });
