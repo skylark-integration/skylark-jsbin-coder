@@ -1,1 +1,1 @@
-{"version":3,"sources":["jsbin.js"],"names":["define","skylark","attach"],"mappings":";;;;;;;AAAAA,QACC,yBACC,SAASC,GACV,OAAOA,EAAQC,OAAO","file":"../jsbin.js","sourcesContent":["define([\r\n\t\"skylark-langx/skylark\"\r\n],function(skylark){\r\n\treturn skylark.attach(\"intg.jsbin\");\r\n});"]}
+{"version":3,"sources":["jsbin.js"],"names":["define","jsbin"],"mappings":";;;;;;;AAAAA,QACE,sBACA,SAASC,GACT,OAAOA","file":"../jsbin.js","sourcesContent":["define([\r\n  \"skylark-jsbin-base\"\r\n],function(jsbin){\r\n  return jsbin;\r\n});\r\n\r\n"]}

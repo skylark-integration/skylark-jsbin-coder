@@ -22,6 +22,7 @@
   "dependencies": {
     "skylark-codemirror": "git+https://github.com/skylark-integration/skylark-codemirror.git#master",
     "skylark-jquery": "git+https://github.com/skylark-integration/skylark-jquery.git#master",
+    "skylark-jsbin-base": "git+https://github.com/skylark-integration/skylark-jsbin-base.git",
     "skylark-jsbin-console": "git+https://github.com/skylark-integration/skylark-jsbin-console.git",
     "skylark-jsbin-renderer": "git+https://github.com/skylark-integration/skylark-jsbin-renderer.git",
     "skylark-langx": "git+https://github.com/skylark-langx/skylark-langx.git#master"

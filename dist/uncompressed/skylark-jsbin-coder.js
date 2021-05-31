@@ -87,10 +87,12 @@
 })(function(define,require) {
 
 define('skylark-jsbin-coder/jsbin',[
-	"skylark-langx/skylark"
-],function(skylark){
-	return skylark.attach("intg.jsbin");
+  "skylark-jsbin-base"
+],function(jsbin){
+  return jsbin;
 });
+
+
 define('skylark-jsbin-coder/coder',[
 	"./jsbin"
 ],function(jsbin){
@@ -4654,7 +4656,7 @@ define('skylark-jsbin-coder/editors/codemirror',[
     "skylark-codemirror/addon/tern/tern"
 ],function(CodeMirror,coder){
 
-	return coder.editor.CodeMirror = CodeMirror;
+	return coder.editors.CodeMirror = CodeMirror;
 });
 
 define('skylark-jsbin-coder/editors/mobileCodeMirror',[

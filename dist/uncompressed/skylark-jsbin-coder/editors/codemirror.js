@@ -24,5 +24,5 @@ define([
     "skylark-codemirror/addon/tern/tern"
 ],function(CodeMirror,coder){
 
-	return coder.editor.CodeMirror = CodeMirror;
+	return coder.editors.CodeMirror = CodeMirror;
 });
