@@ -1,5 +1,5 @@
 define([
-	"skylark-jsbin-render/console",
+	"skylark-jsbin-console",
   "skylark-jquery",
   "../jsbin",
   "../coder",

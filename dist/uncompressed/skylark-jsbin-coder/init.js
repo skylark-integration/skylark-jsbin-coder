@@ -4,7 +4,8 @@ define([
 	"./coder",
 	"./editors/panels",
 	"./editors/snapshot",
-],function(jsconsole,renderer,coder,panels,snapshot) {
+	"./render/upgradeConsolePanel"
+],function(jsconsole,renderer,coder,panels,snapshot,upgradeConsolePanel) {
 
 	function init() {
 		//snapshot
@@ -71,6 +72,8 @@ define([
 
   	  jsconsole.init(document.getElementById('output'));
 
+  	  upgradeConsolePanel(panels.named.console);
+
 
   	  // from render/live.js
 
@@ -81,6 +84,6 @@ define([
 
 	}
 
-	return ccoder.init = init;
+	return coder.init = init;
 	
 });

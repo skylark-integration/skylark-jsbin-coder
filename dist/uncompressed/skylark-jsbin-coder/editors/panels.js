@@ -550,7 +550,7 @@ define([
   editors.css = panelInit.css();
   editors.javascript = panelInit.javascript();
   editors.console = panelInit.console();
-  upgradeConsolePanel(editors.console);
+  ///upgradeConsolePanel(editors.console);
   editors.live = panelInit.live();
 
   editors.live.settings.render = function (showAlerts) {
@@ -705,6 +705,7 @@ define([
     });
   });
 
+  var _set = processors.set;
   processors.set = function (panelId, processorName, callback) {
     var panel;
 
@@ -712,68 +713,18 @@ define([
     // this is kinda nasty, but it allows me to set panel processors during boot
     if (panelId instanceof Panel) {
       panel = panelId;
-      panelId = panel.id;
     } else {
       panel = jsbin.panels.named[panelId];
     }
 
-    if (!jsbin.state.processors) {
-      jsbin.state.processors = {};
-    }
+    _set(panel,processorName,callback);
 
-    var cmMode = processorName ? editorModes[processorName] || editorModes[panelId] : editorModes[panelId];
-
-    // For JSX, use the plain JavaScript mode but disable smart indentation
-    // because it doesn't work properly
-    var smartIndent = processorName !== 'jsx';
-
-    if (!panel) { return; }
-
-    panel.trigger('processor', processorName || 'none');
-    if (processorName && processors[processorName]) {
-      jsbin.state.processors[panelId] = processorName;
-      panel.processor = processors[processorName](function () {
-        // processor is ready
-        panel.editor.setOption('mode', cmMode);
-        panel.editor.setOption('smartIndent', smartIndent);
-        $processorSelectors.find('a').trigger('select', [processorName]);
-        if (callback) { callback(); }
-      });
-    } else {
-      // remove the preprocessor
-      panel.editor.setOption('mode', cmMode);
-      panel.editor.setOption('smartIndent', smartIndent);
-
-      panel.processor = defaultProcessor;
-      // delete jsbin.state.processors[panelId];
-      jsbin.state.processors[panelId] = panelId;
-      delete panel.type;
-    }
-
-    // linting
-    var mmMode = cmMode;
-    if (cmMode === 'javascript') {
-      mmMode = 'js';
-    }
-    if (cmMode === 'htmlmixed') {
-      mmMode = 'html';
-    }
-    var isHint = panel.editor.getOption('lint');
-    if (isHint) {
-      panel.editor.lintStop();
-    }
-    if (jsbin.settings[mmMode + 'hint']) {
-      panel.editor.setOption('mode', cmMode);
-      if (typeof hintingDone !== 'undefined') {
-        panel.editor.setOption('mode', cmMode);
-        hintingDone(panel.editor);
-      }
-    }
   };
+
 
   processors.reset = function (panelId) {
     processors.set(panelId);
   };
 
-  return jsbin.codepan.panels = panels;
+  return jsbin.coder.panels = panels;
 });

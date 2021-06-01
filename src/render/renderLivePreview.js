@@ -16,13 +16,13 @@ define([
    */
 
   function sendReload() {
-    if (saveChecksum) {
+    if (jsbin.saveChecksum) {
       $.ajax({
         url: jsbin.getURL() + '/reload',
         data: {
           code: jsbin.state.code,
           revision: jsbin.state.revision,
-          checksum: saveChecksum
+          checksum: jsbin.saveChecksum
         },
         type: 'post'
       });

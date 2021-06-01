@@ -35,5 +35,5 @@ define([
   updateTitle.re = /<title>(.*)<\/title>/i;
   updateTitle.lastState = null;
 
-  return jsbin.codepan.updateTitle = updateTitle;
+  return jsbin.coder.updateTitle = updateTitle;
 });

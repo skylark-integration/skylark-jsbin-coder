@@ -1,11 +1,13 @@
 define([
   "skylark-jquery",
   "skylark-jsbin-base/storage",
+  "skylark-jsbin-processors",
    "../jsbin",
    "../coder",
   "./codemirror",
-  "./snippets.cm"
-],function ($,store,jsbin,coder,CodeMirror) {
+  "./snippets.cm",
+  "../chrome/splitter"
+],function ($,store,processors,jsbin,coder,CodeMirror) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),
@@ -193,12 +195,12 @@ define([
 
     if (jsbin.state.processors && jsbin.state.processors[name]) {
       panelLanguage = jsbin.state.processors[name];
-      jsbin.processors.set(panel, jsbin.state.processors[name]);
+      processors.set(panel, jsbin.state.processors[name]);
     } else if (settings.processor) { // FIXME is this even used?
       panelLanguage = settings.processors[settings.processor];
-      jsbin.processors.set(panel, settings.processor);
+      processors.set(panel, settings.processor);
     } else if (processors[panel.id]) {
-      jsbin.processors.set(panel, panel.id);
+      processors.set(panel, panel.id);
     } else {
       // this is just a dummy function for console & output...which makes no sense...
       panel.processor = function (str) {
@@ -619,7 +621,7 @@ define([
       if (sessionURL !== jsbin.getURL() && !jsbin.state.checksum) {
         // nuke the live saving checksum
         store.sessionStorage.removeItem('checksum');
-        saveChecksum = false;
+        jsbin.saveChecksum = false;
       }
 
       if (template && cached == template[panel]) { // restored from original saved
@@ -654,85 +656,10 @@ define([
   }
 
 
-
   // moved from processors/processor.js
-  var render = function() {
-    if (jsbin.panels.ready) {
-      editors.console.render();
-    }
-  };
 
-  var formatErrors = function(res) {
-    var errors = [];
-    var line = 0;
-    var ch = 0;
-    for (var i = 0; i < res.length; i++) {
-      line = res[i].line || 0;
-      ch = res[i].ch || 0;
-      errors.push({
-        from: CodeMirror.Pos(line, ch),
-        to: CodeMirror.Pos(line, ch),
-        message: res[i].msg,
-        severity : 'error'
-      });
-    }
-    return errors;
-  };
-
-  var $panelButtons = $('#panels');
-
-  var $processorSelectors = $('div.processorSelector').each(function () {
-    var panelId = this.getAttribute('data-type'),
-        $el = $(this),
-        $label = $el.closest('.label').find('strong a'),
-        originalLabel = $label.text();
-
-    $el.find('a').click(function (e) {
-      var panel = jsbin.panels.named[panelId];
-      var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
-
-      e.preventDefault();
-      var target = this.hash.substring(1),
-          label = $(this).text(),
-          labelData = $(this).data('label');
-      if (target !== 'convert') {
-        $panelButton.html(labelData || label);
-        $label.html('<span>' + label + '</span>');
-        if (target === panelId) {
-          processors.reset(panelId);
-          render();
-        } else {
-          processors.set(panelId, target, render);
-        }
-      } else {
-        $label.text(originalLabel);
-        $panelButton.html(originalLabel);
-        panel.render().then(function (source) {
-          processors.reset(panelId);
-          panel.setCode(source);
-        });
-      }
-    }).bind('select', function (event, value) {
-      if (value === this.hash.substring(1)) {
-        var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
-        var $this = $(this);
-        $label.html('<span>' + $this.text() + '</span>');
-        $panelButton.html($this.data('label') || $this.text());
-      }
-    });
-  });
-
-  processors.set = function (panelId, processorName, callback) {
-    var panel;
-
-    // panelId can be id or instance of a panel.
-    // this is kinda nasty, but it allows me to set panel processors during boot
-    if (panelId instanceof Panel) {
-      panel = panelId;
-      panelId = panel.id;
-    } else {
-      panel = jsbin.panels.named[panelId];
-    }
+  processors.set = function (panel, processorName, callback) {
+    var panelId = panel.id;;
 
     if (!jsbin.state.processors) {
       jsbin.state.processors = {};
@@ -753,7 +680,7 @@ define([
         // processor is ready
         panel.editor.setOption('mode', cmMode);
         panel.editor.setOption('smartIndent', smartIndent);
-        $processorSelectors.find('a').trigger('select', [processorName]);
+        $('div.processorSelector')/*$processorSelectors*/.find('a').trigger('select', [processorName]);
         if (callback) { callback(); }
       });
     } else {
@@ -786,10 +713,6 @@ define([
         hintingDone(panel.editor);
       }
     }
-  };
-
-  processors.reset = function (panelId) {
-    processors.set(panelId);
   };
 
   return coder.editors.Panel = Panel;

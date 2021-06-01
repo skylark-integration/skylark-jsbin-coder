@@ -104,7 +104,7 @@ define([
       });
 
       $(this.textarea)
-        .on(eventName, throttle(function () {
+        .on(eventName, jsbin.throttle(function () {
           update();
           $body.removeClass('editor-focus');
         }, 200))

@@ -4765,7 +4765,7 @@ define('skylark-jsbin-coder/editors/mobileCodeMirror',[
       });
 
       $(this.textarea)
-        .on(eventName, throttle(function () {
+        .on(eventName, jsbin.throttle(function () {
           update();
           $body.removeClass('editor-focus');
         }, 200))
@@ -5104,14 +5104,250 @@ define('skylark-jsbin-coder/editors/snippets.cm',[
 
   return coder.editors.snippets = CodeMirror.snippets;
 });
+define('skylark-jsbin-coder/chrome/splitter',[
+  "skylark-jquery",
+  "skylark-jsbin-base/storage",
+   "../jsbin"
+],function ($,store,jsbin) {
+  $.fn.splitter = function () {
+    var $document = $(document),
+        $blocker = $('<div class="block"></div>'),
+        $body = $('body');
+        // blockiframe = $blocker.find('iframe')[0];
+
+    var splitterSettings = JSON.parse(store.localStorage.getItem('splitterSettings') || '[]');
+    return this.each(function () {
+      var $el = $(this),
+          $originalContainer = $(this),
+          guid = $.fn.splitter.guid++,
+          $parent = $el.parent(),
+          type = 'x',
+          $prev = type === 'x' ? $el.prevAll(':visible:first') : $el.nextAll(':visible:first'),
+          $handle = $('<div class="resize"></div>'),
+          dragging = false,
+          width = $parent.width(),
+          parentOffset = $parent.offset(),
+          left = parentOffset.left,
+          top = parentOffset.top, // usually zero :(
+          props = {
+            x: {
+              currentPos: $parent.offset().left,
+              multiplier: 1,
+              cssProp: 'left',
+              otherCssProp: 'right',
+              size: $parent.width(),
+              sizeProp: 'width',
+              moveProp: 'pageX',
+              init: {
+                top: 0,
+                bottom: 0,
+                width: jsbin.mobile ? 44 : 8,
+                'margin-left': jsbin.mobile ? '-22px' : '-4px',
+                height: '100%',
+                left: 'auto',
+                right: 'auto',
+                opacity: 0,
+                position: 'absolute',
+                cursor: 'ew-resize',
+                // 'border-top': '0',
+                'border-left': '1px solid rgba(218, 218, 218, 0.5)',
+                'z-index': 99999
+              }
+            },
+            y: {
+              currentPos: $parent.offset().top,
+              multiplier: -1,
+              size: $parent.height(),
+              cssProp: 'bottom',
+              otherCssProp: 'top',
+              sizeProp: 'height',
+              moveProp: 'pageY',
+              init: {
+                top: 'auto',
+                cursor: 'ns-resize',
+                bottom: 'auto',
+                height: 8,
+                width: '100%',
+                left: 0,
+                right: 0,
+                opacity: 0,
+                position: 'absolute',
+                border: 0,
+                // 'border-top': '1px solid rgba(218, 218, 218, 0.5)',
+                'z-index': 99999
+              }
+            }
+          },
+          refreshTimer = null,
+          settings = splitterSettings[guid] || {};
+
+      var tracker = {
+        down: { x: null, y: null },
+        delta: { x: null, y: null },
+        track: false,
+        timer: null
+      };
+      $handle.bind('mousedown', function (event) {
+        tracker.down.x = event.pageX;
+        tracker.down.y = event.pageY;
+        tracker.delta = { x: null, y: null };
+        tracker.target = $handle[type == 'x' ? 'height' : 'width']() * 0.25;
+      });
+
+      $document.bind('mousemove', function (event) {
+        if (dragging) {
+          tracker.delta.x = tracker.down.x - event.pageX;
+          tracker.delta.y = tracker.down.y - event.pageY;
+          clearTimeout(tracker.timer);
+          tracker.timer = setTimeout(function () {
+            tracker.down.x = event.pageX;
+            tracker.down.y = event.pageY;
+          }, 250);
+          var targetType = type == 'x' ? 'y' : 'x';
+          if (Math.abs(tracker.delta[targetType]) > tracker.target) {
+            $handle.trigger('change', targetType, event[props[targetType].moveProp]);
+            tracker.down.x = event.pageX;
+            tracker.down.y = event.pageY;
+          }
+        }
+      });
+
+      function moveSplitter(pos) {
+        if (type === 'y') {
+          pos -= top;
+        }
+        var v = pos - props[type].currentPos,
+            split = 100 / props[type].size * v,
+            delta = (pos - settings[type]) * props[type].multiplier,
+            prevSize = $prev[props[type].sizeProp](),
+            elSize = $el[props[type].sizeProp]();
+
+        if (type === 'y') {
+          split = 100 - split;
+        }
+
+        // if prev panel is too small and delta is negative, block
+        if (prevSize < 100 && delta < 0) {
+          // ignore
+        } else if (elSize < 100 && delta > 0) {
+          // ignore
+        } else {
+          // allow sizing to happen
+          $el.css(props[type].cssProp, split + '%');
+          $prev.css(props[type].otherCssProp, (100 - split) + '%');
+          var css = {};
+          css[props[type].cssProp] = split + '%';
+          $handle.css(css);
+          settings[type] = pos;
+          splitterSettings[guid] = settings;
+          store.localStorage.setItem('splitterSettings', JSON.stringify(splitterSettings));
+
+          // wait until animations have completed!
+          if (moveSplitter.timer) clearTimeout(moveSplitter.timer);
+          moveSplitter.timer = setTimeout(function () {
+            $document.trigger('sizeeditors');
+          }, 120);
+        }
+      }
+
+      function resetPrev() {
+        $prev = type === 'x' ? $handle.prevAll(':visible:first') : $handle.nextAll(':visible:first');
+      }
+
+      $document.bind('mouseup touchend', function () {
+        if (dragging) {
+          dragging = false;
+          $blocker.remove();
+          // $handle.css( 'opacity', '0');
+          $body.removeClass('dragging');
+        }
+      }).bind('mousemove touchmove', function (event) {
+        if (dragging) {
+          moveSplitter(event[props[type].moveProp] || event.originalEvent.touches[0][props[type].moveProp]);
+        }
+      });
+
+      $blocker.bind('mousemove touchmove', function (event) {
+        if (dragging) {
+          moveSplitter(event[props[type].moveProp] || event.originalEvent.touches[0][props[type].moveProp]);
+        }
+      });
+
+      $handle.bind('mousedown touchstart', function (e) {
+        dragging = true;
+        $body.append($blocker).addClass('dragging');
+        props[type].size = $parent[props[type].sizeProp]();
+        props[type].currentPos = 0; // is this really required then?
+
+        resetPrev();
+        e.preventDefault();
+      });
+
+      /*
+      .hover(function () {
+        $handle.css('opacity', '1');
+      }, function () {
+        if (!dragging) {
+          $handle.css('opacity', '0');
+        }
+      })
+    */
+
+      $handle.bind('init', function (event, x) {
+        $handle.css(props[type].init);
+        props[type].size = $parent[props[type].sizeProp]();
+        resetPrev();
+
+        // can only be read at init
+        top = $parent.offset().top;
+
+        $blocker.css('cursor', type == 'x' ? 'ew-resize' : 'ns-resize');
+
+        if (type == 'y') {
+          $el.css('border-right', 0);
+          $prev.css('border-left', 0);
+          $prev.css('border-top', '2px solid #ccc');
+        } else {
+          // $el.css('border-right', '1px solid #ccc');
+          $el.css('border-top', 0);
+          // $prev.css('border-right', '2px solid #ccc');
+        }
+
+        if ($el.is(':hidden')) {
+          $handle.hide();
+        } else {
+          if ($prev.length) {
+            $el.css('border-' + props[type].cssProp, '1px solid #ccc');
+          } else {
+            $el.css('border-' + props[type].cssProp, '0');
+          }
+          moveSplitter(x !== undefined ? x : $el.offset()[props[type].cssProp]);
+        }
+      }); //.trigger('init', settings.x || $el.offset().left);
+
+      $prev.css('width', 'auto');
+      $prev.css('height', 'auto');
+      $el.data('splitter', $handle);
+      $el.before($handle);
+
+      // if (settings.y) {
+      //   $handle.trigger('change', 'y');
+      // }
+    });
+  };
+
+  $.fn.splitter.guid = 0;
+});
 define('skylark-jsbin-coder/editors/panel',[
   "skylark-jquery",
   "skylark-jsbin-base/storage",
+  "skylark-jsbin-processors",
    "../jsbin",
    "../coder",
   "./codemirror",
-  "./snippets.cm"
-],function ($,store,jsbin,coder,CodeMirror) {
+  "./snippets.cm",
+  "../chrome/splitter"
+],function ($,store,processors,jsbin,coder,CodeMirror) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),
@@ -5299,12 +5535,12 @@ define('skylark-jsbin-coder/editors/panel',[
 
     if (jsbin.state.processors && jsbin.state.processors[name]) {
       panelLanguage = jsbin.state.processors[name];
-      jsbin.processors.set(panel, jsbin.state.processors[name]);
+      processors.set(panel, jsbin.state.processors[name]);
     } else if (settings.processor) { // FIXME is this even used?
       panelLanguage = settings.processors[settings.processor];
-      jsbin.processors.set(panel, settings.processor);
+      processors.set(panel, settings.processor);
     } else if (processors[panel.id]) {
-      jsbin.processors.set(panel, panel.id);
+      processors.set(panel, panel.id);
     } else {
       // this is just a dummy function for console & output...which makes no sense...
       panel.processor = function (str) {
@@ -5725,7 +5961,7 @@ define('skylark-jsbin-coder/editors/panel',[
       if (sessionURL !== jsbin.getURL() && !jsbin.state.checksum) {
         // nuke the live saving checksum
         store.sessionStorage.removeItem('checksum');
-        saveChecksum = false;
+        jsbin.saveChecksum = false;
       }
 
       if (template && cached == template[panel]) { // restored from original saved
@@ -5760,85 +5996,10 @@ define('skylark-jsbin-coder/editors/panel',[
   }
 
 
-
   // moved from processors/processor.js
-  var render = function() {
-    if (jsbin.panels.ready) {
-      editors.console.render();
-    }
-  };
 
-  var formatErrors = function(res) {
-    var errors = [];
-    var line = 0;
-    var ch = 0;
-    for (var i = 0; i < res.length; i++) {
-      line = res[i].line || 0;
-      ch = res[i].ch || 0;
-      errors.push({
-        from: CodeMirror.Pos(line, ch),
-        to: CodeMirror.Pos(line, ch),
-        message: res[i].msg,
-        severity : 'error'
-      });
-    }
-    return errors;
-  };
-
-  var $panelButtons = $('#panels');
-
-  var $processorSelectors = $('div.processorSelector').each(function () {
-    var panelId = this.getAttribute('data-type'),
-        $el = $(this),
-        $label = $el.closest('.label').find('strong a'),
-        originalLabel = $label.text();
-
-    $el.find('a').click(function (e) {
-      var panel = jsbin.panels.named[panelId];
-      var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
-
-      e.preventDefault();
-      var target = this.hash.substring(1),
-          label = $(this).text(),
-          labelData = $(this).data('label');
-      if (target !== 'convert') {
-        $panelButton.html(labelData || label);
-        $label.html('<span>' + label + '</span>');
-        if (target === panelId) {
-          processors.reset(panelId);
-          render();
-        } else {
-          processors.set(panelId, target, render);
-        }
-      } else {
-        $label.text(originalLabel);
-        $panelButton.html(originalLabel);
-        panel.render().then(function (source) {
-          processors.reset(panelId);
-          panel.setCode(source);
-        });
-      }
-    }).bind('select', function (event, value) {
-      if (value === this.hash.substring(1)) {
-        var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
-        var $this = $(this);
-        $label.html('<span>' + $this.text() + '</span>');
-        $panelButton.html($this.data('label') || $this.text());
-      }
-    });
-  });
-
-  processors.set = function (panelId, processorName, callback) {
-    var panel;
-
-    // panelId can be id or instance of a panel.
-    // this is kinda nasty, but it allows me to set panel processors during boot
-    if (panelId instanceof Panel) {
-      panel = panelId;
-      panelId = panel.id;
-    } else {
-      panel = jsbin.panels.named[panelId];
-    }
+  processors.set = function (panel, processorName, callback) {
+    var panelId = panel.id;;
 
     if (!jsbin.state.processors) {
       jsbin.state.processors = {};
@@ -5859,7 +6020,7 @@ define('skylark-jsbin-coder/editors/panel',[
         // processor is ready
         panel.editor.setOption('mode', cmMode);
         panel.editor.setOption('smartIndent', smartIndent);
-        $processorSelectors.find('a').trigger('select', [processorName]);
+        $('div.processorSelector')/*$processorSelectors*/.find('a').trigger('select', [processorName]);
         if (callback) { callback(); }
       });
     } else {
@@ -5892,10 +6053,6 @@ define('skylark-jsbin-coder/editors/panel',[
         hintingDone(panel.editor);
       }
     }
-  };
-
-  processors.reset = function (panelId) {
-    processors.set(panelId);
   };
 
   return coder.editors.Panel = Panel;
@@ -6452,7 +6609,7 @@ define('skylark-jsbin-coder/editors/panels',[
   editors.css = panelInit.css();
   editors.javascript = panelInit.javascript();
   editors.console = panelInit.console();
-  upgradeConsolePanel(editors.console);
+  ///upgradeConsolePanel(editors.console);
   editors.live = panelInit.live();
 
   editors.live.settings.render = function (showAlerts) {
@@ -6607,6 +6764,7 @@ define('skylark-jsbin-coder/editors/panels',[
     });
   });
 
+  var _set = processors.set;
   processors.set = function (panelId, processorName, callback) {
     var panel;
 
@@ -6614,70 +6772,20 @@ define('skylark-jsbin-coder/editors/panels',[
     // this is kinda nasty, but it allows me to set panel processors during boot
     if (panelId instanceof Panel) {
       panel = panelId;
-      panelId = panel.id;
     } else {
       panel = jsbin.panels.named[panelId];
     }
 
-    if (!jsbin.state.processors) {
-      jsbin.state.processors = {};
-    }
+    _set(panel,processorName,callback);
 
-    var cmMode = processorName ? editorModes[processorName] || editorModes[panelId] : editorModes[panelId];
-
-    // For JSX, use the plain JavaScript mode but disable smart indentation
-    // because it doesn't work properly
-    var smartIndent = processorName !== 'jsx';
-
-    if (!panel) { return; }
-
-    panel.trigger('processor', processorName || 'none');
-    if (processorName && processors[processorName]) {
-      jsbin.state.processors[panelId] = processorName;
-      panel.processor = processors[processorName](function () {
-        // processor is ready
-        panel.editor.setOption('mode', cmMode);
-        panel.editor.setOption('smartIndent', smartIndent);
-        $processorSelectors.find('a').trigger('select', [processorName]);
-        if (callback) { callback(); }
-      });
-    } else {
-      // remove the preprocessor
-      panel.editor.setOption('mode', cmMode);
-      panel.editor.setOption('smartIndent', smartIndent);
-
-      panel.processor = defaultProcessor;
-      // delete jsbin.state.processors[panelId];
-      jsbin.state.processors[panelId] = panelId;
-      delete panel.type;
-    }
-
-    // linting
-    var mmMode = cmMode;
-    if (cmMode === 'javascript') {
-      mmMode = 'js';
-    }
-    if (cmMode === 'htmlmixed') {
-      mmMode = 'html';
-    }
-    var isHint = panel.editor.getOption('lint');
-    if (isHint) {
-      panel.editor.lintStop();
-    }
-    if (jsbin.settings[mmMode + 'hint']) {
-      panel.editor.setOption('mode', cmMode);
-      if (typeof hintingDone !== 'undefined') {
-        panel.editor.setOption('mode', cmMode);
-        hintingDone(panel.editor);
-      }
-    }
   };
+
 
   processors.reset = function (panelId) {
     processors.set(panelId);
   };
 
-  return jsbin.codepan.panels = panels;
+  return jsbin.coder.panels = panels;
 });
 define('skylark-jsbin-coder/editors/mobile-keyboard',[
   "skylark-jquery",
@@ -7047,7 +7155,7 @@ define('skylark-jsbin-coder/editors/keycontrol',[
   /*globals objectValue, $, jsbin, $body, $document, saveChecksum, jsconsole*/
   var keyboardHelpVisible = false;
 
-  var customKeys = objectValue('settings.keys', jsbin) || {};
+  var customKeys = jsbin.objectValue('settings.keys', jsbin) || {};
 
   function enableAltUse() {
     if (!jsbin.settings.keys) {
@@ -7060,9 +7168,9 @@ define('skylark-jsbin-coder/editors/keycontrol',[
   $('input.enablealt').attr('checked', customKeys.useAlt ? true : false).change(enableAltUse);
 
   if (!customKeys.disabled) {
-    $body.keydown(keycontrol);
+    jsbin.$body.keydown(keycontrol);
   } else {
-    $body.addClass('nokeyboardshortcuts');
+    jsbin.$body.addClass('nokeyboardshortcuts');
   }
 
   var panelShortcuts = {};
@@ -7088,7 +7196,7 @@ define('skylark-jsbin-coder/editors/keycontrol',[
 
 
   if (!customKeys.disabled) {
-    $document.keydown(function (event) {
+    jsbin.$document.keydown(function (event) {
       var includeAltKey = customKeys.useAlt ? event.altKey : !event.altKey,
           closekey = customKeys.closePanel ? customKeys.closePanel : 48;
 
@@ -7107,9 +7215,9 @@ define('skylark-jsbin-coder/editors/keycontrol',[
         event.preventDefault();
       } else if (!jsbin.embed && event.metaKey && event.which === 83) { // save
         if (event.shiftKey === false) {
-          if (saveChecksum) {
-            saveChecksum = false;
-            $document.trigger('snapshot');
+          if (jsbin.saveChecksum) {
+            jsbin.saveChecksum = false;
+            jsbin.$document.trigger('snapshot');
           } else {
             // trigger an initial save
             $('a.save:first').click();
@@ -7127,7 +7235,7 @@ define('skylark-jsbin-coder/editors/keycontrol',[
         jsbin.panels.hide(jsbin.panels.focused.id);
       } else if (event.which === 220 && (event.metaKey || event.ctrlKey)) {
         jsbin.settings.hideheader = !jsbin.settings.hideheader;
-        $body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
+        jsbin.$body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
       } else if (event.which === 76 && event.ctrlKey && jsbin.panels.panels.console.visible) {
         if (event.shiftKey) {
           // reset
@@ -7214,7 +7322,7 @@ define('skylark-jsbin-coder/editors/keycontrol',[
               jsbin.settings.keys = {};
             }
             jsbin.settings.keys.seenWarning = true;
-            $document.trigger('tip', {
+            jsbin.$document.trigger('tip', {
               type: 'notification',
               content: '<label><input type="checkbox" class="enablealt"> <strong>Turn this off</strong>. Reserve ' + cmd + '+[n] for switching browser tabs and use ' + cmd + '+<u>alt</u>+[n] to switch JS Bin panels. You can access this any time in <strong>Help&rarr;Keyboard</strong></label>'
             });
@@ -7231,7 +7339,7 @@ define('skylark-jsbin-coder/editors/keycontrol',[
         opendropdown($('#help').prev()[0]);
         event.stop();
       } else if (event.which === 27 && keyboardHelpVisible) {
-        $body.removeClass('keyboardHelp');
+        jsbin.$body.removeClass('keyboardHelp');
         keyboardHelpVisible = false;
         event.stop();
       } else if (event.which === 27 && jsbin.panels.focused && codePanel) {
@@ -8984,13 +9092,14 @@ define('skylark-jsbin-coder/updateTitle',[
   updateTitle.re = /<title>(.*)<\/title>/i;
   updateTitle.lastState = null;
 
-  return jsbin.codepan.updateTitle = updateTitle;
+  return jsbin.coder.updateTitle = updateTitle;
 });
 define('skylark-jsbin-coder/editors/snapshot',[
   "skylark-jquery",
    "../jsbin",
+   "../coder",
    "../updateTitle"
-],function ($,jsbin,updateTitle) {
+],function ($,jsbin,coder,updateTitle) {
   function watchForSnapshots() {
     /*globals $document, jsbin, updateTitle, saveChecksum*/
     'use strict';
@@ -9004,7 +9113,7 @@ define('skylark-jsbin-coder/editors/snapshot',[
         var parts = localStorage.latest.split('/');
         if (parts[0] === jsbin.state.code) {
           jsbin.state.latest = false;
-          saveChecksum = false; // jshint ignore:line
+          jsbin.saveChecksum = false; // jshint ignore:line
           jsbin.state.checksum = false;
           updateTitle();
           window.history.replaceState(null, null, jsbin.getURL() + '/edit');
@@ -9099,13 +9208,96 @@ define('skylark-jsbin-coder/editors/beautify',[
 
 });
 
+define('skylark-jsbin-coder/render/upgradeConsolePanel',[
+	"skylark-jsbin-console",
+  "skylark-jquery",
+  "../jsbin",
+  "../coder",
+  "../editors/panels"
+],function(jsconsole,$,jsbin,coder,panels){
+  // moved from render/console.js
+
+  function upgradeConsolePanel(console) {
+    console.setCursorTo = jsconsole.setCursorTo;
+    console.$el.click(function (event) {
+      if (!$(event.target).closest('#output').length) {
+        jsconsole.focus();
+      }
+    });
+    console.reset = function () {
+      jsconsole.reset();
+    };
+    console.settings.render = function (withAlerts) {
+      /*
+        // unnecessary ? //lwf
+      var html = panels.named.html.getCode().trim();
+      if (html === "") {
+        panels.named.javascript.render().then(function (echo) {
+          echo = echo.trim();
+          return getPreparedCode().then(function (code) {
+            code = code.replace(/<pre>/, '').replace(/<\/pre>/, '');
+
+            setTimeout(function() {
+              jsconsole.run({
+                echo: echo,
+                cmd: code
+              });
+            }, 0);
+          });
+        }, function (error) {
+          console.warn('Failed to render JavaScript');
+          console.warn(error);
+        });
+
+        // Tell the iframe to reload
+        renderer.postMessage('render', {
+          source: '<html>'
+        });
+      } else {
+      */
+        renderLivePreview(withAlerts || false);
+      //}
+    };
+    console.settings.show = function () {
+      jsconsole.clear();
+      // renderLivePreview(true);
+      // setTimeout because the renderLivePreview creates the iframe after a timeout
+      setTimeout(function () {
+        if (panels.named.console.ready && !jsbin.embed) jsconsole.focus();
+      }, 0);
+    };
+    console.settings.hide = function () {
+      // Removal code is commented out so that the
+      // output iframe is never removed
+      if (!panels.named.live.visible) {
+        // $live.find('iframe').remove();
+      }
+    };
+
+    $document.one('jsbinReady', function () {
+      var hidebutton = function () {
+        $('#runconsole')[this.visible ? 'hide' : 'show']();
+      };
+
+      panels.named.live.on('show', hidebutton).on('hide', hidebutton);
+
+      if (panels.named.live.visible) {
+        $('#runconsole').hide();
+      }
+
+    });
+  }
+
+  return coder.render.upgradeConsolePanel = upgradeConsolePanel;
+});
 define('skylark-jsbin-coder/init',[
 	"skylark-jsbin-console",
 	"skylark-jsbin-renderer",
 	"./coder",
 	"./editors/panels",
 	"./editors/snapshot",
-],function(jsconsole,renderer,coder,panels,snapshot) {
+	"./render/upgradeConsolePanel"
+],function(jsconsole,renderer,coder,panels,snapshot,upgradeConsolePanel) {
 
 	function init() {
 		//snapshot
@@ -9172,6 +9364,8 @@ define('skylark-jsbin-coder/init',[
 
   	  jsconsole.init(document.getElementById('output'));
 
+  	  upgradeConsolePanel(panels.named.console);
+
 
   	  // from render/live.js
 
@@ -9182,7 +9376,7 @@ define('skylark-jsbin-coder/init',[
 
 	}
 
-	return ccoder.init = init;
+	return coder.init = init;
 	
 });
 define('skylark-jsbin-coder/main',[

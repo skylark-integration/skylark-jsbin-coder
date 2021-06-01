@@ -1,8 +1,9 @@
 define([
   "skylark-jquery",
    "../jsbin",
+   "../coder",
    "../updateTitle"
-],function ($,jsbin,updateTitle) {
+],function ($,jsbin,coder,updateTitle) {
   function watchForSnapshots() {
     /*globals $document, jsbin, updateTitle, saveChecksum*/
     'use strict';
@@ -16,7 +17,7 @@ define([
         var parts = localStorage.latest.split('/');
         if (parts[0] === jsbin.state.code) {
           jsbin.state.latest = false;
-          saveChecksum = false; // jshint ignore:line
+          jsbin.saveChecksum = false; // jshint ignore:line
           jsbin.state.checksum = false;
           updateTitle();
           window.history.replaceState(null, null, jsbin.getURL() + '/edit');

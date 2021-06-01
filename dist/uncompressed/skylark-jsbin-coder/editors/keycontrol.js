@@ -8,7 +8,7 @@ define([
   /*globals objectValue, $, jsbin, $body, $document, saveChecksum, jsconsole*/
   var keyboardHelpVisible = false;
 
-  var customKeys = objectValue('settings.keys', jsbin) || {};
+  var customKeys = jsbin.objectValue('settings.keys', jsbin) || {};
 
   function enableAltUse() {
     if (!jsbin.settings.keys) {
@@ -21,9 +21,9 @@ define([
   $('input.enablealt').attr('checked', customKeys.useAlt ? true : false).change(enableAltUse);
 
   if (!customKeys.disabled) {
-    $body.keydown(keycontrol);
+    jsbin.$body.keydown(keycontrol);
   } else {
-    $body.addClass('nokeyboardshortcuts');
+    jsbin.$body.addClass('nokeyboardshortcuts');
   }
 
   var panelShortcuts = {};
@@ -49,7 +49,7 @@ define([
 
 
   if (!customKeys.disabled) {
-    $document.keydown(function (event) {
+    jsbin.$document.keydown(function (event) {
       var includeAltKey = customKeys.useAlt ? event.altKey : !event.altKey,
           closekey = customKeys.closePanel ? customKeys.closePanel : 48;
 
@@ -68,9 +68,9 @@ define([
         event.preventDefault();
       } else if (!jsbin.embed && event.metaKey && event.which === 83) { // save
         if (event.shiftKey === false) {
-          if (saveChecksum) {
-            saveChecksum = false;
-            $document.trigger('snapshot');
+          if (jsbin.saveChecksum) {
+            jsbin.saveChecksum = false;
+            jsbin.$document.trigger('snapshot');
           } else {
             // trigger an initial save
             $('a.save:first').click();
@@ -88,7 +88,7 @@ define([
         jsbin.panels.hide(jsbin.panels.focused.id);
       } else if (event.which === 220 && (event.metaKey || event.ctrlKey)) {
         jsbin.settings.hideheader = !jsbin.settings.hideheader;
-        $body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
+        jsbin.$body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
       } else if (event.which === 76 && event.ctrlKey && jsbin.panels.panels.console.visible) {
         if (event.shiftKey) {
           // reset
@@ -175,7 +175,7 @@ define([
               jsbin.settings.keys = {};
             }
             jsbin.settings.keys.seenWarning = true;
-            $document.trigger('tip', {
+            jsbin.$document.trigger('tip', {
               type: 'notification',
               content: '<label><input type="checkbox" class="enablealt"> <strong>Turn this off</strong>. Reserve ' + cmd + '+[n] for switching browser tabs and use ' + cmd + '+<u>alt</u>+[n] to switch JS Bin panels. You can access this any time in <strong>Help&rarr;Keyboard</strong></label>'
             });
@@ -192,7 +192,7 @@ define([
         opendropdown($('#help').prev()[0]);
         event.stop();
       } else if (event.which === 27 && keyboardHelpVisible) {
-        $body.removeClass('keyboardHelp');
+        jsbin.$body.removeClass('keyboardHelp');
         keyboardHelpVisible = false;
         event.stop();
       } else if (event.which === 27 && jsbin.panels.focused && codePanel) {
