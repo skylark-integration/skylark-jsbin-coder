@@ -4661,9 +4661,10 @@ define('skylark-jsbin-coder/editors/codemirror',[
 
 define('skylark-jsbin-coder/editors/mobileCodeMirror',[
   "skylark-jquery",
+  "skylark-jsbin-chrome/hideOpen",
    "../jsbin",
    "./codemirror"
-],function ($,jsbin,CodeMirror) {
+],function ($,hideOpen, jsbin,CodeMirror) {
   /* globals jsbin, throttle, $, $body, CodeMirror, $document */
   var noop = function () {};
   var rootClassName = document.body.className;
@@ -5342,12 +5343,13 @@ define('skylark-jsbin-coder/editors/panel',[
   "skylark-jquery",
   "skylark-jsbin-base/storage",
   "skylark-jsbin-processors",
+  "skylark-jsbin-chrome/hideOpen",
    "../jsbin",
    "../coder",
   "./codemirror",
   "./snippets.cm",
   "../chrome/splitter"
-],function ($,store,processors,jsbin,coder,CodeMirror) {
+],function ($,store,processors,hideOpen, jsbin,coder,CodeMirror) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),

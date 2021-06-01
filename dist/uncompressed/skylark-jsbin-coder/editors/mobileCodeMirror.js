@@ -1,8 +1,9 @@
 define([
   "skylark-jquery",
+  "skylark-jsbin-chrome/hideOpen",
    "../jsbin",
    "./codemirror"
-],function ($,jsbin,CodeMirror) {
+],function ($,hideOpen, jsbin,CodeMirror) {
   /* globals jsbin, throttle, $, $body, CodeMirror, $document */
   var noop = function () {};
   var rootClassName = document.body.className;

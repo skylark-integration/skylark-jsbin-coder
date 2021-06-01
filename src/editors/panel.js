@@ -2,12 +2,13 @@ define([
   "skylark-jquery",
   "skylark-jsbin-base/storage",
   "skylark-jsbin-processors",
+  "skylark-jsbin-chrome/hideOpen",
    "../jsbin",
    "../coder",
   "./codemirror",
   "./snippets.cm",
   "../chrome/splitter"
-],function ($,store,processors,jsbin,coder,CodeMirror) {
+],function ($,store,processors,hideOpen, jsbin,coder,CodeMirror) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),
