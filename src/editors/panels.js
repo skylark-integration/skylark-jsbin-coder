@@ -5,6 +5,8 @@ define([
   "../jsbin",
    "./panel"
 ],function ($,store,processors,jsbin,Panel) {
+    'use strict';
+
   var panels = {};
 
   panels.getVisible = function () {
@@ -26,7 +28,7 @@ define([
         state = {},
         panel,
         left = '',
-        width = $(window).width();
+        width = jsbin.$window.width();
 
     for (var i = 0; i < visible.length; i++) {
       panel = visible[i];
@@ -124,9 +126,9 @@ define([
         hash = location.hash.substring(1),
         toopen = [],
         state = jsbin.embed ? null : JSON.parse(store.sessionStorage.getItem('jsbin.panels') || 'null'),
-        hasContent = { javascript: editors.javascript.getCode().length,
-          css: editors.css.getCode().length,
-          html: editors.html.getCode().length
+        hasContent = { javascript: panels.named.javascript.getCode().length,
+          css: panels.named.css.getCode().length,
+          html: panels.named.html.getCode().length
         },
         name = '',
         i = 0,
@@ -134,7 +136,7 @@ define([
         init = [],
         panelURLValue = '',
         openWithSameDimensions = false,
-        width = $window.width(),
+        width = jsbin.$window.width(),
         deferredCodeInsert = '',
         focused = !!store.sessionStorage.getItem('panel'),
         validPanels = 'live javascript html css console'.split(' '),
@@ -261,16 +263,16 @@ define([
                   parts = code.split('%' + name + '%');
                   code = parts[0] + decodeURIComponent(panelURLValue) + parts[1];
                   panel.setCode(code);
-                  $document.unbind('codeChange', deferredInsert);
+                  jsbin.$document.unbind('codeChange', deferredInsert);
                 }
               }
 
               if (todo.length === 0) {
-                $document.unbind('codeChange', deferredInsert);
+                jsbin.$document.unbind('codeChange', deferredInsert);
               }
             };
 
-            $document.bind('codeChange', deferredInsert);
+            jsbin.$document.bind('codeChange', deferredInsert);
           }(name, panelURLValue));
         }
       }
@@ -385,7 +387,7 @@ define([
     var visible = $('#source .panelwrapper:visible'),
         width = 100,
         height = 0,
-        innerW = $window.width() - (visible.length - 1), // to compensate for border-left
+        innerW = jsbin.$window.width() - (visible.length - 1), // to compensate for border-left
         innerH = $('#source').outerHeight(),
         left = 0,
         right = 0,
@@ -546,10 +548,10 @@ define([
   var editors = panels.named = {};  // panels.panels => panels.named
 
   // show all panels (change the order to control the panel order)
-  editors.html = panelInit.html();
-  editors.css = panelInit.css();
-  editors.javascript = panelInit.javascript();
-  editors.console = panelInit.console();
+  panels.named.html = panelInit.html();
+  panels.named.css = panelInit.css();
+  panels.named.javascript = panelInit.javascript();
+  panels.named.console = panelInit.console();
   ///upgradeConsolePanel(editors.console);
   editors.live = panelInit.live();
 
@@ -603,27 +605,27 @@ define([
 
       var altLibraries = $('li.add-library');
       var altRun = $('li.run-with-js');
-      editors.live.on('hide', function () {
+      panels.named.live.on('hide', function () {
         altLibraries.show();
         altRun.hide();
       });
 
-      editors.live.on('show', function () {
+      panels.named.live.on('show', function () {
         altLibraries.hide();
         altRun.show();
       });
 
       if (panels.named.live.visible) { // panels.panels => panels.named
-        editors.live.trigger('show');
+        panels.named.live.trigger('show');
       } else {
-        editors.live.trigger('hide');
+        panels.named.live.trigger('hide');
       }
 
       clearInterval(editorsReady);
 
       // if the console is visible, it'll handle rendering of the output and console
       if (panels.named.console.visible) { // panels.panels => panels.named
-        editors.console.render();
+        panels.named.console.render();
       } else {
         // otherwise, force a render
         renderLivePreview();
@@ -634,13 +636,13 @@ define([
         $(window).resize(function () {
           clearTimeout(resizeTimer);
           resizeTimer = setTimeout(function () {
-            $document.trigger('sizeeditors');
+            jsbin.$document.trigger('sizeeditors');
           }, 100);
         });
       }
 
-      $document.trigger('sizeeditors');
-      $document.trigger('jsbinReady');
+      jsbin.$document.trigger('sizeeditors');
+      jsbin.$document.trigger('jsbinReady');
     }
   }, 100);
 
@@ -651,16 +653,12 @@ define([
   }, 10);
   panels.focus(panels.getVisible()[0] || null);
 
-
-
-
   // moved from processors/processor.js
   var render = function() {
     if (jsbin.panels.ready) {
-      editors.console.render();
+      panels.named.console.render();
     }
   };
-
 
   var $panelButtons = $('#panels');
 

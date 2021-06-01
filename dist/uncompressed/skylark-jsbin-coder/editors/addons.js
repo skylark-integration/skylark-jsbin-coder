@@ -2,8 +2,9 @@ define([
   "skylark-jquery",
    "../jsbin",
    "../coder",
+   "./codemirror",
    "./tern"
-],function ($,jsbin,coder) {
+],function ($,jsbin,coder,CodeMirror) {
   'use strict';
   /*globals $, jsbin, CodeMirror*/
 
