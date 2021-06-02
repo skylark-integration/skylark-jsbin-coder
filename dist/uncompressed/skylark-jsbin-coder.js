@@ -4768,11 +4768,11 @@ define('skylark-jsbin-coder/editors/mobileCodeMirror',[
       $(this.textarea)
         .on(eventName, jsbin.throttle(function () {
           update();
-          $body.removeClass('editor-focus');
+          jsbin.$body.removeClass('editor-focus');
         }, 200))
         .on('focus', function () {
           hideOpen();
-          $body.addClass('editor-focus');
+          jsbin.$body.addClass('editor-focus');
         })
         .on('touchstart', function () {
           completionIndex = -1; // reset the completion
@@ -5064,6 +5064,47 @@ define('skylark-jsbin-coder/editors/mobile-command-maps',[
 
    return jsbin.commandMaps = commandMaps;
 });
+define('skylark-jsbin-coder/chrome/analytics',[
+  "skylark-langx",
+  "skylark-jquery",
+  "skylark-jsbin-chrome/analytics",
+   "../jsbin"
+],function (langx,$,analytics,jsbin) {
+  langx.mixin(analytics ,  {
+
+    universalEditor: function (value) {
+      analytics.track('menu', 'universalEditor', value);
+    },
+    library: function (action, value) {
+      analytics.track('menu', action, 'library', value);
+    },
+    showPanel: function (panelId) {
+      analytics.track('panel', 'show', panelId);
+    },
+    hidePanel: function (panelId) {
+      analytics.track('panel', 'hide', panelId);
+    },
+    enableLiveJS: function (ok) {
+      analytics.track('button', 'auto-run js', ok ? 'on' : 'off');
+    },
+    layout: function (panelsVisible) {
+      var layout = [], panel = '';
+
+      for (panel in panelsVisible) {
+        layout.push(panel.id);
+      }
+
+      analytics.track('layout', 'update', layout.sort().join(',') || 'none');
+    },
+    run: function (from) {
+      analytics.track(from || 'button', 'run with js');
+    },
+    runconsole: function (from) {
+      analytics.track(from || 'button', 'run console');
+    }
+  });
+  return  analytics;
+});
 /*global jsbin:true, CodeMirror:true */
 define('skylark-jsbin-coder/editors/snippets.cm',[
   "skylark-jquery",
@@ -5105,11 +5146,12 @@ define('skylark-jsbin-coder/editors/snippets.cm',[
 
   return coder.editors.snippets = CodeMirror.snippets;
 });
-define('skylark-jsbin-coder/chrome/splitter',[
+define('skylark-jsbin-chrome/splitter',[
   "skylark-jquery",
   "skylark-jsbin-base/storage",
-   "../jsbin"
-],function ($,store,jsbin) {
+   "./jsbin",
+   "./chrome"
+],function ($,store,jsbin,chrome) {
   $.fn.splitter = function () {
     var $document = $(document),
         $blocker = $('<div class="block"></div>'),
@@ -5338,6 +5380,8 @@ define('skylark-jsbin-coder/chrome/splitter',[
   };
 
   $.fn.splitter.guid = 0;
+
+  return chrome.splitter = $.fn.splitter;
 });
 define('skylark-jsbin-coder/editors/panel',[
   "skylark-jquery",
@@ -5347,9 +5391,10 @@ define('skylark-jsbin-coder/editors/panel',[
    "../jsbin",
    "../coder",
   "./codemirror",
+  "../chrome/analytics",
   "./snippets.cm",
-  "../chrome/splitter"
-],function ($,store,processors,hideOpen, jsbin,coder,CodeMirror) {
+  "skylark-jsbin-chrome/splitter"
+],function ($,store,processors,hideOpen, jsbin,coder,CodeMirror,analytics) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),
@@ -5626,7 +5671,7 @@ define('skylark-jsbin-coder/editors/panel',[
         panel.$el.show();
       }
 
-      $body.addClass('panelsVisible');
+      jsbin.$body.addClass('panelsVisible');
 
       if (panel.settings.show) {
         panel.settings.show.call(panel, true);
@@ -5669,7 +5714,7 @@ define('skylark-jsbin-coder/editors/panel',[
 
             populateEditor(panel, panel.name);
           }
-          if (!panel.virgin || jsbin.panels.ready) {
+          if (!panel.virgin || coder.editors.panels.ready) {
             panel.editor.focus();
             panel.focus();
           }
@@ -5738,15 +5783,15 @@ define('skylark-jsbin-coder/editors/panel',[
         panel.settings.hide.call(panel, true);
       }
 
-      var visible = jsbin.panels.getVisible();
+      var visible = coder.editors.panels.getVisible();
       if (visible.length) {
-        jsbin.panels.focused = visible[0];
-        if (jsbin.panels.focused.editor) {
-          jsbin.panels.focused.editor.focus();
+        coder.editors.panels.focused = visible[0];
+        if (coder.editors.panels.focused.editor) {
+          coder.editors.panels.focused.editor.focus();
         } else {
-          jsbin.panels.focused.$el.focus();
+          coder.editors.panels.focused.$el.focus();
         }
-        jsbin.panels.focused.focus();
+        coder.editors.panels.focused.focus();
       }
 
       if (!fromShow && jsbin.mobile && visible.length === 0) {
@@ -5795,7 +5840,7 @@ define('skylark-jsbin-coder/editors/panel',[
     },
     focus: function () {
       this.$panel.removeClass('blur');
-      jsbin.panels.focus(this);
+      coder.editors.panels.focus(this);
     },
     render: function () {
       'use strict';
@@ -5805,7 +5850,7 @@ define('skylark-jsbin-coder/editors/panel',[
         if (panel.editor) {
           panel.processor(panel.getCode()).then(resolve, reject);
         } else if (panel.visible && panel.settings.render) {
-          if (jsbin.panels.ready) {
+          if (coder.editors.panels.ready) {
             panel.settings.render.apply(panel, args);
           }
           resolve();
@@ -5977,7 +6022,7 @@ define('skylark-jsbin-coder/editors/panel',[
         editor.setCode(saved);
         var processor = JSON.parse(store.localStorage.getItem('saved-processors') || '{}')[panel];
         if (processor) {
-          jsbin.processors.set(jsbin.panels.panels[panel], processor);
+          jsbin.processors.set(coder.editors.panels.panels[panel], processor);
         }
       } else { // otherwise fall back on the JS Bin default
         editor.setCode(template[panel]);
@@ -6063,9 +6108,10 @@ define('skylark-jsbin-coder/editors/panels',[
   "skylark-jquery",
   "skylark-jsbin-base/storage",
   "skylark-jsbin-processors",
+  "skylark-jsbin-renderer",  
   "../jsbin",
    "./panel"
-],function ($,store,processors,jsbin,Panel) {
+],function ($,store,processors,renderer,jsbin,Panel) {
     'use strict';
 
   var panels = {};
@@ -6362,7 +6408,7 @@ define('skylark-jsbin-coder/editors/panels',[
 
     var visible = panels.getVisible();
     if (visible.length) {
-      $body.addClass('panelsVisible');
+      jsbin.$body.addClass('panelsVisible');
       if (!focused) {
         visible[0].show();
       }
@@ -6457,7 +6503,7 @@ define('skylark-jsbin-coder/editors/panels',[
         nestedPanels = [];
 
     if (visible.length) {
-      $body.addClass('panelsVisible');
+      jsbin.$body.addClass('panelsVisible');
 
       // visible = visible.sort(function (a, b) {
       //   return a.order < b.order ? -1 : 1;
@@ -6494,7 +6540,7 @@ define('skylark-jsbin-coder/editors/panels',[
     } else if (!jsbin.embed) {
       $('#history').show();
       setTimeout(function () {
-        $body.removeClass('panelsVisible');
+        jsbin.$body.removeClass('panelsVisible');
       }, 100); // 100 is on purpose to add to the effect of the reveal
     }
   };
@@ -6614,9 +6660,9 @@ define('skylark-jsbin-coder/editors/panels',[
   panels.named.javascript = panelInit.javascript();
   panels.named.console = panelInit.console();
   ///upgradeConsolePanel(editors.console);
-  editors.live = panelInit.live();
+  panels.named.live = panelInit.live();
 
-  editors.live.settings.render = function (showAlerts) {
+  panels.named.live.settings.render = function (showAlerts) {
     if (panels.ready) {
       renderLivePreview(showAlerts);
     }
@@ -6716,7 +6762,7 @@ define('skylark-jsbin-coder/editors/panels',[
 
   // moved from processors/processor.js
   var render = function() {
-    if (jsbin.panels.ready) {
+    if (panels.ready) {
       panels.named.console.render();
     }
   };
@@ -6730,7 +6776,7 @@ define('skylark-jsbin-coder/editors/panels',[
         originalLabel = $label.text();
 
     $el.find('a').click(function (e) {
-      var panel = jsbin.panels.named[panelId];
+      var panel = panels.named[panelId];
       var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
 
       e.preventDefault();
@@ -6773,7 +6819,7 @@ define('skylark-jsbin-coder/editors/panels',[
     if (panelId instanceof Panel) {
       panel = panelId;
     } else {
-      panel = jsbin.panels.named[panelId];
+      panel = panels.named[panelId];
     }
 
     _set(panel,processorName,callback);
@@ -6785,7 +6831,166 @@ define('skylark-jsbin-coder/editors/panels',[
     processors.set(panelId);
   };
 
-  return jsbin.coder.panels = panels;
+
+
+  // moved from render/render.js
+  var renderCodeWorking = false;
+  function formatErrors(res) {
+    var errors = [];
+    var line = 0;
+    var ch = 0;
+    for (var i = 0; i < res.length; i++) {
+      line = res[i].line || 0;
+      ch = res[i].ch || 0;
+      errors.push({
+        from: {line, ch},
+        to: {line, ch},
+        message: res[i].msg,
+        severity: 'error',
+      });
+    }
+    return errors;
+  };
+
+  var getRenderedCode = panels.getRenderedCode =  function () {
+    'use strict';
+
+    if (renderCodeWorking) {
+      // cancel existing jobs, and replace with this job
+    }
+
+    renderCodeWorking = true;
+
+    // this allows us to make use of a promise's result instead of recompiling
+    // the language each time
+    var promises = ['html', 'javascript', 'css'].reduce(function (prev, curr) {
+      if (!jsbin.owner() || panels.focused && curr === panels.focused.id) {
+        getRenderedCode[curr] = getRenderedCode.render(curr);
+      }
+      prev.push(getRenderedCode[curr]);
+      return prev;
+    }, []);
+
+    return Promise.all(promises).then(function (data) {
+      var res = {
+        html: data[0],
+        javascript: data[1],
+        css: data[2],
+      };
+      return res;
+    }).catch(function (e) {
+      // swallow
+    });
+  };
+
+  getRenderedCode.render = function render (language) {
+    return new Promise(function (resolve, reject) {
+      panels.named[language].render().then(resolve, function (error) {
+        console.warn(panels.named[language].processor.id + ' processor compilation failed');
+        if (!error) {
+          error = {};
+        }
+
+        if ($.isArray(error)) { // then this is for our hinter
+          // console.log(data.errors);
+          var cm = panels.named[language].editor;
+
+          // if we have the error reporting function (called updateLinting)
+          if (typeof cm.updateLinting !== 'undefined') {
+            hintingDone(cm);
+            var err = formatErrors(error);
+            cm.updateLinting(err);
+          } else {
+            // otherwise dump to the console
+            console.warn(error);
+          }
+        } else if (error.message) {
+          console.warn(error.message, error.stack);
+        } else {
+          console.warn(error);
+        }
+
+        reject(error);
+      });
+    });
+  };
+
+
+ function sendReload() {
+    if (jsbin.saveChecksum) {
+      $.ajax({
+        url: jsbin.getURL() + '/reload',
+        data: {
+          code: jsbin.state.code,
+          revision: jsbin.state.revision,
+          checksum: jsbin.saveChecksum
+        },
+        type: 'post'
+      });
+    }
+  }
+
+
+  /** ============================================================================
+   * Live rendering.
+   *
+   * Comes in two tasty flavours. Basic mode, which is essentially an IE7
+   * fallback. Take a look at https://github.com/jsbin/jsbin/issues/651 for more.
+   * It uses the iframe's name and JS Bin's event-stream support to keep the
+   * page up-to-date.
+   *
+   * The second mode uses postMessage to inform the runner of changes to code,
+   * config and anything that affects rendering, and also listens for messages
+   * coming back to update the JS Bin UI.
+   * ========================================================================== */
+
+  /**
+   * Render live preview.
+   * Create the runner iframe, and if postMe wait until the iframe is loaded to
+   * start postMessaging the runner.
+   */
+
+  // The big daddy that handles postmessaging the runner.
+  var renderLivePreview = panels.renderLivePreview = function (requested) {
+    // No postMessage? Don't render – the event-stream will handle it.
+    if (!window.postMessage) { return; }
+
+    // Inform other pages event streaming render to reload
+    if (requested) {
+      sendReload();
+      jsbin.state.hasBody = false;
+    }
+    getRenderedCode().then(function (codes) { // modified by lwf
+      var includeJsInRealtime = jsbin.settings.includejs;
+
+      // Tell the iframe to reload
+      var visiblePanels = panels.getVisible();
+      var outputPanelOpen = visiblePanels.indexOf(panels.named.live) > -1;
+      var consolePanelOpen = visiblePanels.indexOf(panels.named.console) > -1;
+      if (!outputPanelOpen && !consolePanelOpen) {
+        return;
+      }
+      // this is a flag that helps detect crashed runners
+      if (jsbin.settings.includejs) {
+        store.sessionStorage.setItem('runnerPending', 1);
+      }
+
+      renderer.postMessage('render', {
+        //source: source,
+        codes : codes, // modified by lwf
+        options: {
+          injectCSS: jsbin.state.hasBody && panels.focused.id === 'css',
+          requested: requested,
+          debug: jsbin.settings.debug,
+          includeJsInRealtime: jsbin.settings.includejs,
+        },
+      });
+
+      jsbin.state.hasBody = true;
+
+    });
+  };
+  return jsbin.coder.editors.panels = panels;
 });
 define('skylark-jsbin-coder/editors/mobile-keyboard',[
   "skylark-jquery",
@@ -6810,7 +7015,7 @@ define('skylark-jsbin-coder/editors/mobile-keyboard',[
   };
 
   var getTA = function () {
-    return jsbin.panels.focused.editor.textarea;
+    return panels.focused.editor.textarea;
   };
 
   var mobileUtils = {
@@ -6849,7 +7054,7 @@ define('skylark-jsbin-coder/editors/mobile-keyboard',[
       }
     },
     complete: function () {
-      var focused = jsbin.panels.focused;
+      var focused = panels.focused;
       if (focused.id === 'html' || focused.id === 'css') {
         CodeMirror.commands['emmet.expand_abbreviation_with_tab'].call(null, focused.editor);
       } else if (focused.editor._hasCompletions && focused.editor._hasCompletions()) {
@@ -6880,7 +7085,7 @@ define('skylark-jsbin-coder/editors/mobile-keyboard',[
     }
 
     button.on('click', function () {
-      var focused = jsbin.panels.focused;
+      var focused = panels.focused;
       if (focused.editor) {
         var pos = focused.editor.getCursor();
         var value = command.callback.call(mobileUtils);
@@ -6941,7 +7146,7 @@ define('skylark-jsbin-coder/editors/mobile-keyboard',[
     panels.named.css.on('show', hideAll('css'));// editors => panels.named
     panels.named.javascript.on('show', hideAll('js'));// editors => panels.named
     panels.named.console.on('show', hideAll('console'));// editors => panels.named
-    hideAll(panels.focused.id === 'javascript' ? 'js' : panels.focused.id)();  // jsbin.panels =>panels
+    hideAll(panels.focused.id === 'javascript' ? 'js' : panels.focused.id)();  // panels =>panels
   });
 });
 define('skylark-jsbin-coder/editors/autocomplete',[
@@ -7231,12 +7436,12 @@ define('skylark-jsbin-coder/editors/keycontrol',[
           $('#sharemenu a').trigger('mousedown');
           event.preventDefault();
         }
-      } else if (event.which === closekey && event.metaKey && includeAltKey && jsbin.panels.focused) {
-        jsbin.panels.hide(jsbin.panels.focused.id);
+      } else if (event.which === closekey && event.metaKey && includeAltKey && panels.focused) {
+        panels.hide(panels.focused.id);
       } else if (event.which === 220 && (event.metaKey || event.ctrlKey)) {
         jsbin.settings.hideheader = !jsbin.settings.hideheader;
         jsbin.$body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
-      } else if (event.which === 76 && event.ctrlKey && jsbin.panels.panels.console.visible) {
+      } else if (event.which === 76 && event.ctrlKey && panels.panels.console.visible) {
         if (event.shiftKey) {
           // reset
           jsconsole.reset();
@@ -7255,10 +7460,10 @@ define('skylark-jsbin-coder/editors/keycontrol',[
 
     var panel = {};
 
-    if (jsbin.panels.focused && jsbin.panels.focused.editor) {
-      panel = jsbin.panels.focused.editor;
-    } else if (jsbin.panels.focused) {
-      panel = jsbin.panels.focused;
+    if (panels.focused && panels.focused.editor) {
+      panel = panels.focused.editor;
+    } else if (panels.focused) {
+      panel = panels.focused;
     }
 
     var codePanel = { css: 1, javascript: 1, html: 1}[panel.id],
@@ -7305,15 +7510,15 @@ define('skylark-jsbin-coder/editors/keycontrol',[
 
       // shortcut for showing a panel
       if (panelShortcuts[event.which] !== undefined && event.metaKey && includeAltKey) {
-        if (jsbin.panels.focused.id === panelShortcuts[event.which]) {
+        if (panels.focused.id === panelShortcuts[event.which]) {
           // this has been disabled in favour of:
           // if the panel is visible, and the user tries cmd+n - then the browser
           // gets the key command.
-          jsbin.panels.hide(panelShortcuts[event.which]);
+          panels.hide(panelShortcuts[event.which]);
           event.stop();
         } else {
           // show
-          jsbin.panels.show(panelShortcuts[event.which]);
+          panels.show(panelShortcuts[event.which]);
           event.stop();
 
           if (!customKeys.useAlt && (!jsbin.settings.keys || !jsbin.settings.keys.seenWarning)) {
@@ -7342,9 +7547,9 @@ define('skylark-jsbin-coder/editors/keycontrol',[
         jsbin.$body.removeClass('keyboardHelp');
         keyboardHelpVisible = false;
         event.stop();
-      } else if (event.which === 27 && jsbin.panels.focused && codePanel) {
+      } else if (event.which === 27 && panels.focused && codePanel) {
         // event.stop();
-        // return CodeMirror.commands.autocomplete(jsbin.panels.focused.editor);
+        // return CodeMirror.commands.autocomplete(panels.focused.editor);
       } else if (event.which === 190 && includeAltKey && event.metaKey && panel.id === 'html') {
         // auto close the element
         if (panel.somethingSelected()) {return;}
@@ -8286,8 +8491,11 @@ define('skylark-jsbin-coder/editors/library',[
   "skylark-jquery",
    "../jsbin",
    "../coder",
-   "./panels"
-],function ($,jsbin,coder,panels) {
+   "./panels",
+   "./libraries",
+  "../chrome/analytics"
+
+],function ($,jsbin,coder,panels, libraries, analytics) {
   /*global $:true, editors:true, libraries:true, analytics:true */
   // 'use strict'; // this causes bigger issues :-\
 
@@ -8623,8 +8831,9 @@ define('skylark-jsbin-coder/editors/addons',[
    "../jsbin",
    "../coder",
    "./codemirror",
+   "./panels",
    "./tern"
-],function ($,jsbin,coder,CodeMirror) {
+],function ($,jsbin,coder,CodeMirror,panels) {
   'use strict';
   /*globals $, jsbin, CodeMirror*/
 
@@ -9024,7 +9233,7 @@ define('skylark-jsbin-coder/editors/addons',[
       $.when.call($, addon.url.map(load)).done(function () {
         if (addon.done) {
           ready(addon.test).then(function () {
-            jsbin.panels.allEditors(function (panel) {
+            panels.allEditors(function (panel) {
               if (panel.editor) {
                 addon.done(panel.editor);
               }
@@ -9131,8 +9340,9 @@ define('skylark-jsbin-coder/editors/snapshot',[
 define('skylark-jsbin-coder/editors/beautify',[
   "skylark-jquery",
    "../jsbin",
-   "../coder"
-],function ($,jsbin,coder) {
+   "../coder",
+   "./panels"
+],function ($,jsbin,coder,panels) {
   'use strict';
   /*globals $, jsbin, objectValue */
 
@@ -9145,7 +9355,7 @@ define('skylark-jsbin-coder/editors/beautify',[
 
   function beautify() {
 
-    var focusedPanel = jsbin.panels.focused;
+    var focusedPanel = panels.focused;
     var beautifyUrls = {
       html: jsbin['static'] + '/js/vendor/beautify/beautify-html.js',
       css: jsbin['static'] + '/js/vendor/beautify/beautify-css.js',
@@ -9179,15 +9389,15 @@ define('skylark-jsbin-coder/editors/beautify',[
   }
 
   function beautifyHTML() {
-    runBeautifier(jsbin.panels.focused, window.html_beautify);
+    runBeautifier(panels.focused, window.html_beautify);
   }
 
   function beautifyCSS() {
-    runBeautifier(jsbin.panels.focused, window.css_beautify);
+    runBeautifier(panels.focused, window.css_beautify);
   }
 
   function beautifyJS() {
-    runBeautifier(jsbin.panels.focused, window.js_beautify);
+    runBeautifier(panels.focused, window.js_beautify);
   }
 
   function runBeautifier(panel, beautifier) {
@@ -9341,10 +9551,10 @@ define('skylark-jsbin-coder/init',[
 	              codeChangeLive(event, data);
 	            }, 1000);
 	          } else {
-	            renderLivePreview();
+	            panels.renderLivePreview();
 	          }
 	        } else {
-	          renderLivePreview();
+	          panels.renderLivePreview();
 	        }
 	      }
 	    }

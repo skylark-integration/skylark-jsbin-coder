@@ -2,9 +2,10 @@ define([
   "skylark-jquery",
   "skylark-jsbin-base/storage",
   "skylark-jsbin-processors",
+  "skylark-jsbin-renderer",  
   "../jsbin",
    "./panel"
-],function ($,store,processors,jsbin,Panel) {
+],function ($,store,processors,renderer,jsbin,Panel) {
     'use strict';
 
   var panels = {};
@@ -301,7 +302,7 @@ define([
 
     var visible = panels.getVisible();
     if (visible.length) {
-      $body.addClass('panelsVisible');
+      jsbin.$body.addClass('panelsVisible');
       if (!focused) {
         visible[0].show();
       }
@@ -396,7 +397,7 @@ define([
         nestedPanels = [];
 
     if (visible.length) {
-      $body.addClass('panelsVisible');
+      jsbin.$body.addClass('panelsVisible');
 
       // visible = visible.sort(function (a, b) {
       //   return a.order < b.order ? -1 : 1;
@@ -433,7 +434,7 @@ define([
     } else if (!jsbin.embed) {
       $('#history').show();
       setTimeout(function () {
-        $body.removeClass('panelsVisible');
+        jsbin.$body.removeClass('panelsVisible');
       }, 100); // 100 is on purpose to add to the effect of the reveal
     }
   };
@@ -553,9 +554,9 @@ define([
   panels.named.javascript = panelInit.javascript();
   panels.named.console = panelInit.console();
   ///upgradeConsolePanel(editors.console);
-  editors.live = panelInit.live();
+  panels.named.live = panelInit.live();
 
-  editors.live.settings.render = function (showAlerts) {
+  panels.named.live.settings.render = function (showAlerts) {
     if (panels.ready) {
       renderLivePreview(showAlerts);
     }
@@ -655,7 +656,7 @@ define([
 
   // moved from processors/processor.js
   var render = function() {
-    if (jsbin.panels.ready) {
+    if (panels.ready) {
       panels.named.console.render();
     }
   };
@@ -669,7 +670,7 @@ define([
         originalLabel = $label.text();
 
     $el.find('a').click(function (e) {
-      var panel = jsbin.panels.named[panelId];
+      var panel = panels.named[panelId];
       var $panelButton = $panelButtons.find('a[href$="' + panelId + '"]');
 
       e.preventDefault();
@@ -712,7 +713,7 @@ define([
     if (panelId instanceof Panel) {
       panel = panelId;
     } else {
-      panel = jsbin.panels.named[panelId];
+      panel = panels.named[panelId];
     }
 
     _set(panel,processorName,callback);
@@ -724,5 +725,164 @@ define([
     processors.set(panelId);
   };
 
-  return jsbin.coder.panels = panels;
+
+
+  // moved from render/render.js
+  var renderCodeWorking = false;
+  function formatErrors(res) {
+    var errors = [];
+    var line = 0;
+    var ch = 0;
+    for (var i = 0; i < res.length; i++) {
+      line = res[i].line || 0;
+      ch = res[i].ch || 0;
+      errors.push({
+        from: {line, ch},
+        to: {line, ch},
+        message: res[i].msg,
+        severity: 'error',
+      });
+    }
+    return errors;
+  };
+
+  var getRenderedCode = panels.getRenderedCode =  function () {
+    'use strict';
+
+    if (renderCodeWorking) {
+      // cancel existing jobs, and replace with this job
+    }
+
+    renderCodeWorking = true;
+
+    // this allows us to make use of a promise's result instead of recompiling
+    // the language each time
+    var promises = ['html', 'javascript', 'css'].reduce(function (prev, curr) {
+      if (!jsbin.owner() || panels.focused && curr === panels.focused.id) {
+        getRenderedCode[curr] = getRenderedCode.render(curr);
+      }
+      prev.push(getRenderedCode[curr]);
+      return prev;
+    }, []);
+
+    return Promise.all(promises).then(function (data) {
+      var res = {
+        html: data[0],
+        javascript: data[1],
+        css: data[2],
+      };
+      return res;
+    }).catch(function (e) {
+      // swallow
+    });
+  };
+
+  getRenderedCode.render = function render (language) {
+    return new Promise(function (resolve, reject) {
+      panels.named[language].render().then(resolve, function (error) {
+        console.warn(panels.named[language].processor.id + ' processor compilation failed');
+        if (!error) {
+          error = {};
+        }
+
+        if ($.isArray(error)) { // then this is for our hinter
+          // console.log(data.errors);
+          var cm = panels.named[language].editor;
+
+          // if we have the error reporting function (called updateLinting)
+          if (typeof cm.updateLinting !== 'undefined') {
+            hintingDone(cm);
+            var err = formatErrors(error);
+            cm.updateLinting(err);
+          } else {
+            // otherwise dump to the console
+            console.warn(error);
+          }
+        } else if (error.message) {
+          console.warn(error.message, error.stack);
+        } else {
+          console.warn(error);
+        }
+
+        reject(error);
+      });
+    });
+  };
+
+
+ function sendReload() {
+    if (jsbin.saveChecksum) {
+      $.ajax({
+        url: jsbin.getURL() + '/reload',
+        data: {
+          code: jsbin.state.code,
+          revision: jsbin.state.revision,
+          checksum: jsbin.saveChecksum
+        },
+        type: 'post'
+      });
+    }
+  }
+
+
+  /** ============================================================================
+   * Live rendering.
+   *
+   * Comes in two tasty flavours. Basic mode, which is essentially an IE7
+   * fallback. Take a look at https://github.com/jsbin/jsbin/issues/651 for more.
+   * It uses the iframe's name and JS Bin's event-stream support to keep the
+   * page up-to-date.
+   *
+   * The second mode uses postMessage to inform the runner of changes to code,
+   * config and anything that affects rendering, and also listens for messages
+   * coming back to update the JS Bin UI.
+   * ========================================================================== */
+
+  /**
+   * Render live preview.
+   * Create the runner iframe, and if postMe wait until the iframe is loaded to
+   * start postMessaging the runner.
+   */
+
+  // The big daddy that handles postmessaging the runner.
+  var renderLivePreview = panels.renderLivePreview = function (requested) {
+    // No postMessage? Don't render – the event-stream will handle it.
+    if (!window.postMessage) { return; }
+
+    // Inform other pages event streaming render to reload
+    if (requested) {
+      sendReload();
+      jsbin.state.hasBody = false;
+    }
+    getRenderedCode().then(function (codes) { // modified by lwf
+      var includeJsInRealtime = jsbin.settings.includejs;
+
+      // Tell the iframe to reload
+      var visiblePanels = panels.getVisible();
+      var outputPanelOpen = visiblePanels.indexOf(panels.named.live) > -1;
+      var consolePanelOpen = visiblePanels.indexOf(panels.named.console) > -1;
+      if (!outputPanelOpen && !consolePanelOpen) {
+        return;
+      }
+      // this is a flag that helps detect crashed runners
+      if (jsbin.settings.includejs) {
+        store.sessionStorage.setItem('runnerPending', 1);
+      }
+
+      renderer.postMessage('render', {
+        //source: source,
+        codes : codes, // modified by lwf
+        options: {
+          injectCSS: jsbin.state.hasBody && panels.focused.id === 'css',
+          requested: requested,
+          debug: jsbin.settings.debug,
+          includeJsInRealtime: jsbin.settings.includejs,
+        },
+      });
+
+      jsbin.state.hasBody = true;
+
+    });
+  };
+  return jsbin.coder.editors.panels = panels;
 });

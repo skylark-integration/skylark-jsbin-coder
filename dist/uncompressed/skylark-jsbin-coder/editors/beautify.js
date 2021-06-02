@@ -1,8 +1,9 @@
 define([
   "skylark-jquery",
    "../jsbin",
-   "../coder"
-],function ($,jsbin,coder) {
+   "../coder",
+   "./panels"
+],function ($,jsbin,coder,panels) {
   'use strict';
   /*globals $, jsbin, objectValue */
 
@@ -15,7 +16,7 @@ define([
 
   function beautify() {
 
-    var focusedPanel = jsbin.panels.focused;
+    var focusedPanel = panels.focused;
     var beautifyUrls = {
       html: jsbin['static'] + '/js/vendor/beautify/beautify-html.js',
       css: jsbin['static'] + '/js/vendor/beautify/beautify-css.js',
@@ -49,15 +50,15 @@ define([
   }
 
   function beautifyHTML() {
-    runBeautifier(jsbin.panels.focused, window.html_beautify);
+    runBeautifier(panels.focused, window.html_beautify);
   }
 
   function beautifyCSS() {
-    runBeautifier(jsbin.panels.focused, window.css_beautify);
+    runBeautifier(panels.focused, window.css_beautify);
   }
 
   function beautifyJS() {
-    runBeautifier(jsbin.panels.focused, window.js_beautify);
+    runBeautifier(panels.focused, window.js_beautify);
   }
 
   function runBeautifier(panel, beautifier) {

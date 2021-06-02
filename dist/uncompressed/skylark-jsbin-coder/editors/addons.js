@@ -3,8 +3,9 @@ define([
    "../jsbin",
    "../coder",
    "./codemirror",
+   "./panels",
    "./tern"
-],function ($,jsbin,coder,CodeMirror) {
+],function ($,jsbin,coder,CodeMirror,panels) {
   'use strict';
   /*globals $, jsbin, CodeMirror*/
 
@@ -404,7 +405,7 @@ define([
       $.when.call($, addon.url.map(load)).done(function () {
         if (addon.done) {
           ready(addon.test).then(function () {
-            jsbin.panels.allEditors(function (panel) {
+            panels.allEditors(function (panel) {
               if (panel.editor) {
                 addon.done(panel.editor);
               }

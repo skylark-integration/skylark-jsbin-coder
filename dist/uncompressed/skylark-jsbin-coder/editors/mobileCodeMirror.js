@@ -107,11 +107,11 @@ define([
       $(this.textarea)
         .on(eventName, jsbin.throttle(function () {
           update();
-          $body.removeClass('editor-focus');
+          jsbin.$body.removeClass('editor-focus');
         }, 200))
         .on('focus', function () {
           hideOpen();
-          $body.addClass('editor-focus');
+          jsbin.$body.addClass('editor-focus');
         })
         .on('touchstart', function () {
           completionIndex = -1; // reset the completion

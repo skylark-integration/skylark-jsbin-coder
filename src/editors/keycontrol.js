@@ -84,12 +84,12 @@ define([
           $('#sharemenu a').trigger('mousedown');
           event.preventDefault();
         }
-      } else if (event.which === closekey && event.metaKey && includeAltKey && jsbin.panels.focused) {
-        jsbin.panels.hide(jsbin.panels.focused.id);
+      } else if (event.which === closekey && event.metaKey && includeAltKey && panels.focused) {
+        panels.hide(panels.focused.id);
       } else if (event.which === 220 && (event.metaKey || event.ctrlKey)) {
         jsbin.settings.hideheader = !jsbin.settings.hideheader;
         jsbin.$body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
-      } else if (event.which === 76 && event.ctrlKey && jsbin.panels.panels.console.visible) {
+      } else if (event.which === 76 && event.ctrlKey && panels.panels.console.visible) {
         if (event.shiftKey) {
           // reset
           jsconsole.reset();
@@ -108,10 +108,10 @@ define([
 
     var panel = {};
 
-    if (jsbin.panels.focused && jsbin.panels.focused.editor) {
-      panel = jsbin.panels.focused.editor;
-    } else if (jsbin.panels.focused) {
-      panel = jsbin.panels.focused;
+    if (panels.focused && panels.focused.editor) {
+      panel = panels.focused.editor;
+    } else if (panels.focused) {
+      panel = panels.focused;
     }
 
     var codePanel = { css: 1, javascript: 1, html: 1}[panel.id],
@@ -158,15 +158,15 @@ define([
 
       // shortcut for showing a panel
       if (panelShortcuts[event.which] !== undefined && event.metaKey && includeAltKey) {
-        if (jsbin.panels.focused.id === panelShortcuts[event.which]) {
+        if (panels.focused.id === panelShortcuts[event.which]) {
           // this has been disabled in favour of:
           // if the panel is visible, and the user tries cmd+n - then the browser
           // gets the key command.
-          jsbin.panels.hide(panelShortcuts[event.which]);
+          panels.hide(panelShortcuts[event.which]);
           event.stop();
         } else {
           // show
-          jsbin.panels.show(panelShortcuts[event.which]);
+          panels.show(panelShortcuts[event.which]);
           event.stop();
 
           if (!customKeys.useAlt && (!jsbin.settings.keys || !jsbin.settings.keys.seenWarning)) {
@@ -195,9 +195,9 @@ define([
         jsbin.$body.removeClass('keyboardHelp');
         keyboardHelpVisible = false;
         event.stop();
-      } else if (event.which === 27 && jsbin.panels.focused && codePanel) {
+      } else if (event.which === 27 && panels.focused && codePanel) {
         // event.stop();
-        // return CodeMirror.commands.autocomplete(jsbin.panels.focused.editor);
+        // return CodeMirror.commands.autocomplete(panels.focused.editor);
       } else if (event.which === 190 && includeAltKey && event.metaKey && panel.id === 'html') {
         // auto close the element
         if (panel.somethingSelected()) {return;}

@@ -2,8 +2,11 @@ define([
   "skylark-jquery",
    "../jsbin",
    "../coder",
-   "./panels"
-],function ($,jsbin,coder,panels) {
+   "./panels",
+   "./libraries",
+  "../chrome/analytics"
+
+],function ($,jsbin,coder,panels, libraries, analytics) {
   /*global $:true, editors:true, libraries:true, analytics:true */
   // 'use strict'; // this causes bigger issues :-\
 

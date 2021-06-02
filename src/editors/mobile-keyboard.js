@@ -21,7 +21,7 @@ define([
   };
 
   var getTA = function () {
-    return jsbin.panels.focused.editor.textarea;
+    return panels.focused.editor.textarea;
   };
 
   var mobileUtils = {
@@ -60,7 +60,7 @@ define([
       }
     },
     complete: function () {
-      var focused = jsbin.panels.focused;
+      var focused = panels.focused;
       if (focused.id === 'html' || focused.id === 'css') {
         CodeMirror.commands['emmet.expand_abbreviation_with_tab'].call(null, focused.editor);
       } else if (focused.editor._hasCompletions && focused.editor._hasCompletions()) {
@@ -91,7 +91,7 @@ define([
     }
 
     button.on('click', function () {
-      var focused = jsbin.panels.focused;
+      var focused = panels.focused;
       if (focused.editor) {
         var pos = focused.editor.getCursor();
         var value = command.callback.call(mobileUtils);
@@ -152,6 +152,6 @@ define([
     panels.named.css.on('show', hideAll('css'));// editors => panels.named
     panels.named.javascript.on('show', hideAll('js'));// editors => panels.named
     panels.named.console.on('show', hideAll('console'));// editors => panels.named
-    hideAll(panels.focused.id === 'javascript' ? 'js' : panels.focused.id)();  // jsbin.panels =>panels
+    hideAll(panels.focused.id === 'javascript' ? 'js' : panels.focused.id)();  // panels =>panels
   });
 });

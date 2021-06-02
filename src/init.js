@@ -48,10 +48,10 @@ define([
 	              codeChangeLive(event, data);
 	            }, 1000);
 	          } else {
-	            renderLivePreview();
+	            panels.renderLivePreview();
 	          }
 	        } else {
-	          renderLivePreview();
+	          panels.renderLivePreview();
 	        }
 	      }
 	    }

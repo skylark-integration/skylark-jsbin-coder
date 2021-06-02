@@ -6,9 +6,10 @@ define([
    "../jsbin",
    "../coder",
   "./codemirror",
+  "../chrome/analytics",
   "./snippets.cm",
-  "../chrome/splitter"
-],function ($,store,processors,hideOpen, jsbin,coder,CodeMirror) {
+  "skylark-jsbin-chrome/splitter"
+],function ($,store,processors,hideOpen, jsbin,coder,CodeMirror,analytics) {
   /*globals $, CodeMirror, jsbin, jshintEnabled, */
   var $document = $(document),
       $source = $('#source'),
@@ -285,7 +286,7 @@ define([
         panel.$el.show();
       }
 
-      $body.addClass('panelsVisible');
+      jsbin.$body.addClass('panelsVisible');
 
       if (panel.settings.show) {
         panel.settings.show.call(panel, true);
@@ -328,7 +329,7 @@ define([
 
             populateEditor(panel, panel.name);
           }
-          if (!panel.virgin || jsbin.panels.ready) {
+          if (!panel.virgin || coder.editors.panels.ready) {
             panel.editor.focus();
             panel.focus();
           }
@@ -397,15 +398,15 @@ define([
         panel.settings.hide.call(panel, true);
       }
 
-      var visible = jsbin.panels.getVisible();
+      var visible = coder.editors.panels.getVisible();
       if (visible.length) {
-        jsbin.panels.focused = visible[0];
-        if (jsbin.panels.focused.editor) {
-          jsbin.panels.focused.editor.focus();
+        coder.editors.panels.focused = visible[0];
+        if (coder.editors.panels.focused.editor) {
+          coder.editors.panels.focused.editor.focus();
         } else {
-          jsbin.panels.focused.$el.focus();
+          coder.editors.panels.focused.$el.focus();
         }
-        jsbin.panels.focused.focus();
+        coder.editors.panels.focused.focus();
       }
 
       if (!fromShow && jsbin.mobile && visible.length === 0) {
@@ -454,7 +455,7 @@ define([
     },
     focus: function () {
       this.$panel.removeClass('blur');
-      jsbin.panels.focus(this);
+      coder.editors.panels.focus(this);
     },
     render: function () {
       'use strict';
@@ -464,7 +465,7 @@ define([
         if (panel.editor) {
           panel.processor(panel.getCode()).then(resolve, reject);
         } else if (panel.visible && panel.settings.render) {
-          if (jsbin.panels.ready) {
+          if (coder.editors.panels.ready) {
             panel.settings.render.apply(panel, args);
           }
           resolve();
@@ -636,7 +637,7 @@ define([
         editor.setCode(saved);
         var processor = JSON.parse(store.localStorage.getItem('saved-processors') || '{}')[panel];
         if (processor) {
-          jsbin.processors.set(jsbin.panels.panels[panel], processor);
+          jsbin.processors.set(coder.editors.panels.panels[panel], processor);
         }
       } else { // otherwise fall back on the JS Bin default
         editor.setCode(template[panel]);
