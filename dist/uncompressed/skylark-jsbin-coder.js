@@ -8693,7 +8693,7 @@ define('skylark-jsbin-coder/editors/panel',[
       panel.editor.setOption('mode', cmMode);
       panel.editor.setOption('smartIndent', smartIndent);
 
-      panel.processor = defaultProcessor;
+      panel.processor = processors.defaultProcessor;
       // delete jsbin.state.processors[panelId];
       jsbin.state.processors[panelId] = panelId;
       delete panel.type;
