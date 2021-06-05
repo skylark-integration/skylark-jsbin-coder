@@ -1,11 +1,12 @@
 define([
 	"skylark-jsbin-console",
 	"skylark-jsbin-renderer",
+	"./jsbin",
 	"./coder",
 	"./editors/panels",
 	"./editors/snapshot",
 	"./render/upgradeConsolePanel"
-],function(jsconsole,renderer,coder,panels,snapshot,upgradeConsolePanel) {
+],function(jsconsole,renderer,jsbin,coder,panels,snapshot,upgradeConsolePanel) {
 
 	function init() {
 		//snapshot
@@ -64,7 +65,7 @@ define([
 	  // timer value: used in the delayed render (because iframes don't have
 	  // innerHeight/Width) in Chrome & WebKit
 	  var deferredLiveRender = null;
-	  $document.bind('codeChange.live', codeChangeLive);
+	  jsbin.$document.bind('codeChange.live', codeChangeLive);
 
 
 	  // from render/console.js

@@ -110,10 +110,16 @@ define([
         readOnly: jsbin.state.embed ? 'nocursor' : false,
         dragDrop: false, // we handle it ourselves
         mode: editorModes[panelLanguage],
-        lineWrapping: false,
+        ///lineWrapping: false,
         // gutters: ['line-highlight'],
         theme: jsbin.settings.theme || 'jsbin',
-        highlightLine: true
+        highlightLine: true,
+
+        lineNumbers: true,
+        lineWrapping: true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+
       };
 
       $.extend(cmSettings, jsbin.settings.editor || {});

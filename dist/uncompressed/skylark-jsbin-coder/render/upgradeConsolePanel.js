@@ -64,7 +64,7 @@ define([
       }
     };
 
-    $document.one('jsbinReady', function () {
+    jsbin.$document.one('jsbinReady', function () {
       var hidebutton = function () {
         $('#runconsole')[this.visible ? 'hide' : 'show']();
       };
