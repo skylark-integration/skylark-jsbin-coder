@@ -81,7 +81,10 @@ define([
   	  var $live = $('#live'),
       showlive = $('#showlive')[0];
 
-      renderer.init($live);
+      renderer.init($live).then(function(){
+ 		    panels.renderLivePreview();
+
+      })
 
 	}
 
