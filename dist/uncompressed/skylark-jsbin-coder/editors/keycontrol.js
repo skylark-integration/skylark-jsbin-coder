@@ -89,7 +89,7 @@ define([
       } else if (event.which === 220 && (event.metaKey || event.ctrlKey)) {
         jsbin.settings.hideheader = !jsbin.settings.hideheader;
         jsbin.$body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
-      } else if (event.which === 76 && event.ctrlKey && panels.panels.console.visible) {
+      } else if (event.which === 76 && event.ctrlKey && panels.named.console.visible) {
         if (event.shiftKey) {
           // reset
           jsconsole.reset();

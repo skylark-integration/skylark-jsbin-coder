@@ -116,11 +116,11 @@ define([
   };
 
   CodeMirror.startTern = function() {
-    loadTern(jsbin.panels.panels.javascript.editor);
-    searchTernDefinition(jsbin.panels.panels.html.getCode());
+    loadTern(jsbin.panels.named.javascript.editor);
+    searchTernDefinition(jsbin.panels.named.html.getCode());
 
     $('#library').bind('change', function () {
-      searchTernDefinition(jsbin.panels.panels.html.getCode());
+      searchTernDefinition(jsbin.panels.named.html.getCode());
     });
   };
 

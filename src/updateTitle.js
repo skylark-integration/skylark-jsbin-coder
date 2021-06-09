@@ -6,7 +6,7 @@ define([
     'use strict';
     /*globals jsbin, documentTitle, $*/
     if (source === undefined) {
-      source = jsbin.panels.panels.html.getCode();
+      source = jsbin.panels.named.html.getCode();
     }
     // read the element out of the source code and plug it in to our document.title
     var newDocTitle = source.match(updateTitle.re);

@@ -643,7 +643,7 @@ define([
         editor.setCode(saved);
         var processor = JSON.parse(store.localStorage.getItem('saved-processors') || '{}')[panel];
         if (processor) {
-          jsbin.processors.set(coder.editors.panels.panels[panel], processor);
+          jsbin.processors.set(coder.editors.panels.named[panel], processor);
         }
       } else { // otherwise fall back on the JS Bin default
         editor.setCode(template[panel]);

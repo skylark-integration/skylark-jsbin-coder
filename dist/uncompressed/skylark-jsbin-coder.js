@@ -8640,7 +8640,7 @@ define('skylark-jsbin-coder/editors/panel',[
         editor.setCode(saved);
         var processor = JSON.parse(store.localStorage.getItem('saved-processors') || '{}')[panel];
         if (processor) {
-          jsbin.processors.set(coder.editors.panels.panels[panel], processor);
+          jsbin.processors.set(coder.editors.panels.named[panel], processor);
         }
       } else { // otherwise fall back on the JS Bin default
         editor.setCode(template[panel]);
@@ -10059,7 +10059,7 @@ define('skylark-jsbin-coder/editors/keycontrol',[
       } else if (event.which === 220 && (event.metaKey || event.ctrlKey)) {
         jsbin.settings.hideheader = !jsbin.settings.hideheader;
         jsbin.$body[jsbin.settings.hideheader ? 'addClass' : 'removeClass']('hideheader');
-      } else if (event.which === 76 && event.ctrlKey && panels.panels.console.visible) {
+      } else if (event.which === 76 && event.ctrlKey && panels.named.console.visible) {
         if (event.shiftKey) {
           // reset
           jsconsole.reset();
@@ -11431,11 +11431,11 @@ define('skylark-jsbin-coder/editors/tern',[
   };
 
   CodeMirror.startTern = function() {
-    loadTern(jsbin.panels.panels.javascript.editor);
-    searchTernDefinition(jsbin.panels.panels.html.getCode());
+    loadTern(jsbin.panels.named.javascript.editor);
+    searchTernDefinition(jsbin.panels.named.html.getCode());
 
     $('#library').bind('change', function () {
-      searchTernDefinition(jsbin.panels.panels.html.getCode());
+      searchTernDefinition(jsbin.panels.named.html.getCode());
     });
   };
 
@@ -11897,7 +11897,7 @@ define('skylark-jsbin-coder/updateTitle',[
     'use strict';
     /*globals jsbin, documentTitle, $*/
     if (source === undefined) {
-      source = jsbin.panels.panels.html.getCode();
+      source = jsbin.panels.named.html.getCode();
     }
     // read the element out of the source code and plug it in to our document.title
     var newDocTitle = source.match(updateTitle.re);
